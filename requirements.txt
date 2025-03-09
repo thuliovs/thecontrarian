@@ -1,5 +1,5 @@
+django>=4.0,<5.2
 crispy-bootstrap5
-django
 uvicorn[standard]
 ptpython
 docopt
