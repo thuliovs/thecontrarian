@@ -4,7 +4,11 @@
     {
       "src": "src/contra/wsgi_vercel.py",
       "use": "@vercel/python",
-      "config": { "maxLambdaSize": "15mb", "runtime": "python3.9" }
+      "config": { 
+        "maxLambdaSize": "15mb", 
+        "runtime": "python3.9",
+        "pip_requirements": "requirements-vercel.txt"
+      }
     },
     {
       "src": "package.json",
@@ -23,5 +27,9 @@
       "src": "/(.*)",
       "dest": "src/contra/wsgi_vercel.py"
     }
-  ]
+  ],
+  "env": {
+    "VERCEL_DEPLOYMENT": "True",
+    "PYTHONPATH": "."
+  }
 } 
