@@ -20,8 +20,30 @@
   ],
   "routes": [
     {
+      "src": "/static/css/styles.css",
+      "dest": "/staticfiles_build/css/styles.css",
+      "headers": { "cache-control": "public, max-age=31536000, immutable" }
+    },
+    {
+      "src": "/static/css/style.css",
+      "dest": "/staticfiles_build/css/style.css",
+      "headers": { "cache-control": "public, max-age=31536000, immutable" }
+    },
+    {
       "src": "/static/(.*)",
       "dest": "/staticfiles_build/static/$1"
+    },
+    {
+      "src": "/css/(.*)",
+      "dest": "/staticfiles_build/css/$1"
+    },
+    {
+      "src": "/js/(.*)",
+      "dest": "/staticfiles_build/js/$1"
+    },
+    {
+      "src": "/img/(.*)",
+      "dest": "/staticfiles_build/img/$1"
     },
     {
       "src": "/(.*)",

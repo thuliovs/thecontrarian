@@ -7,6 +7,8 @@ import os
 import sys
 import traceback
 import json
+import re
+import mimetypes
 
 # Garantir que o diretório atual esteja no PYTHONPATH
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
@@ -14,6 +16,13 @@ PROJECT_DIR = os.path.dirname(BASE_DIR)
 sys.path.insert(0, PROJECT_DIR)  # adiciona a raiz do projeto
 sys.path.insert(0, BASE_DIR)     # adiciona o diretório src
 sys.path.insert(0, os.getcwd())  # adiciona o diretório atual
+
+# Mapear tipos MIME
+mimetypes.add_type("text/css", ".css")
+mimetypes.add_type("text/javascript", ".js")
+mimetypes.add_type("image/png", ".png")
+mimetypes.add_type("image/jpeg", ".jpg")
+mimetypes.add_type("image/jpeg", ".jpeg")
 
 # Importa PyMySQL antes de tudo
 try:
@@ -32,11 +41,83 @@ print(f"Project Directory: {PROJECT_DIR}")
 print(f"Base Directory: {BASE_DIR}")
 print(f"Python Path: {sys.path}")
 print(f"Environment Variables: {json.dumps({k: v for k, v in os.environ.items() if not k.startswith('PATH')})}")
+
+# Verificar arquivos estáticos disponíveis
+static_dirs = [
+    os.path.join(os.getcwd(), 'staticfiles_build'), 
+    os.path.join(os.getcwd(), 'staticfiles_build', 'static'),
+    os.path.join(os.getcwd(), 'staticfiles_build', 'css'),
+    os.path.join(os.getcwd(), 'staticfiles_build', 'static', 'css')
+]
+
+print("===== ARQUIVOS ESTÁTICOS DISPONÍVEIS =====")
+for static_dir in static_dirs:
+    if os.path.exists(static_dir):
+        print(f"Diretório: {static_dir}")
+        for root, dirs, files in os.walk(static_dir):
+            rel_path = os.path.relpath(root, static_dir)
+            if rel_path == ".":
+                rel_path = ""
+            for file in files:
+                print(f"  /{rel_path}/{file}" if rel_path else f"  /{file}")
+    else:
+        print(f"Diretório não encontrado: {static_dir}")
 print("==================================")
 
 # Configura variáveis de ambiente para o Django
 os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'contra.settings')
 os.environ['PYTHONUNBUFFERED'] = '1'  # Para garantir que os logs apareçam
+
+# Função para servir arquivos estáticos diretamente
+def serve_static_file(path, environ, start_response):
+    # Procura o arquivo em vários diretórios possíveis
+    search_paths = [
+        os.path.join(os.getcwd(), 'staticfiles_build', path.lstrip('/')),
+        os.path.join(os.getcwd(), 'staticfiles_build', 'static', path.lstrip('/')),
+        os.path.join(os.getcwd(), 'staticfiles_build', path.replace('/static/', '/').lstrip('/')),
+        os.path.join(os.getcwd(), path.lstrip('/'))
+    ]
+    
+    file_path = None
+    for search_path in search_paths:
+        if os.path.isfile(search_path):
+            file_path = search_path
+            break
+    
+    if file_path is None:
+        # Caso especial para styles.css
+        if 'styles.css' in path or 'style.css' in path:
+            css_paths = [
+                os.path.join(os.getcwd(), 'staticfiles_build', 'css', 'styles.css'),
+                os.path.join(os.getcwd(), 'staticfiles_build', 'static', 'css', 'styles.css'),
+                os.path.join(os.getcwd(), 'staticfiles_build', 'css', 'style.css'),
+                os.path.join(os.getcwd(), 'staticfiles_build', 'static', 'css', 'style.css')
+            ]
+            for css_path in css_paths:
+                if os.path.isfile(css_path):
+                    file_path = css_path
+                    break
+
+    if file_path is None:
+        status = '404 Not Found'
+        headers = [('Content-type', 'text/plain; charset=utf-8')]
+        start_response(status, headers)
+        return [f"File not found: {path}\nSearched in: {search_paths}".encode('utf-8')]
+    
+    # Determinar o tipo MIME
+    content_type = mimetypes.guess_type(file_path)[0] or 'text/plain'
+    
+    # Ler o arquivo
+    with open(file_path, 'rb') as f:
+        file_contents = f.read()
+    
+    status = '200 OK'
+    headers = [
+        ('Content-type', content_type),
+        ('Content-Length', str(len(file_contents)))
+    ]
+    start_response(status, headers)
+    return [file_contents]
 
 # Função para servir uma página de erro em caso de falha
 def serve_error_page(error_message, traceback_info):
@@ -110,7 +191,7 @@ try:
         print("Django inicializado com sucesso!")
         
         # Para compatibilidade com o Vercel
-        app = application
+        django_app = application
         
         # Verifica se conseguimos resolver a URL para a home page
         from django.urls import resolve, Resolver404
@@ -121,6 +202,24 @@ try:
             print("AVISO: URL '/' não pode ser resolvida - verifique as URLs")
         except Exception as e:
             print(f"Erro ao resolver URL '/': {e}")
+        
+        # Wrapper para servir arquivos estáticos, caso Django não os encontre
+        def app(environ, start_response):
+            path = environ.get('PATH_INFO', '')
+            
+            # Se for um arquivo estático, tenta servi-lo diretamente
+            if path.startswith('/static/') or path.startswith('/css/') or path.startswith('/js/') or \
+               path.endswith('.css') or path.endswith('.js'):
+                print(f"Tentando servir arquivo estático: {path}")
+                return serve_static_file(path, environ, start_response)
+            
+            # Caso contrário, passa para o Django
+            try:
+                return django_app(environ, start_response)
+            except Exception as e:
+                print(f"Erro ao processar requisição Django: {str(e)}")
+                error_app = serve_error_page(f"Erro ao processar requisição: {str(e)}", traceback.format_exc())
+                return error_app(environ, start_response)
             
     except Exception as e:
         error_message = f"Erro ao inicializar aplicação Django: {str(e)}"
