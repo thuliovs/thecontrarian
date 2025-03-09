@@ -158,6 +158,66 @@ def apply_migrations():
         # Inicializa o Django
         django.setup()
         
+        # Verificar se precisamos limpar o banco de dados antes
+        # Tentar conectar ao banco e verificar se há tabelas inconsistentes
+        try:
+            db_name = os.environ.get('MYSQL_DATABASE', 'not-set')
+            db_user = os.environ.get('MYSQL_USER', 'not-set')
+            db_host = os.environ.get('MYSQL_HOST', 'not-set')
+            db_password = os.environ.get('MYSQL_PASSWORD', '')
+            db_port = os.environ.get('MYSQL_PORT', '3306')
+            
+            # Tentar listar todas as tabelas
+            conn = pymysql.connect(
+                host=db_host,
+                user=db_user,
+                password=db_password,
+                database=db_name,
+                port=int(db_port)
+            )
+            
+            with conn.cursor() as cursor:
+                # Verificar se alguma tabela existe
+                cursor.execute("SHOW TABLES")
+                tables = cursor.fetchall()
+                
+                if tables:
+                    print(f"Banco de dados existente com {len(tables)} tabelas. Verificando estado.")
+                    
+                    # Verificar se django_migrations existe
+                    cursor.execute("SHOW TABLES LIKE 'django_migrations'")
+                    if not cursor.fetchone():
+                        print("O banco de dados está em um estado inconsistente: tabelas existem mas django_migrations não.")
+                        print("Tentando limpar o banco de dados antes de aplicar migrações...")
+                        
+                        # Limpar todas as tabelas
+                        cursor.execute("SET FOREIGN_KEY_CHECKS = 0")
+                        for table in tables:
+                            table_name = table[0]
+                            print(f"Removendo tabela: {table_name}")
+                            cursor.execute(f"DROP TABLE IF EXISTS `{table_name}`")
+                        cursor.execute("SET FOREIGN_KEY_CHECKS = 1")
+                        conn.commit()
+                        print("Banco de dados limpo com sucesso. Pronto para migrações.")
+                    
+                    # Caso específico: verificar se client_planchoice existe e tem problema com a coluna 'plan'
+                    cursor.execute("SHOW TABLES LIKE 'client_planchoice'")
+                    if cursor.fetchone():
+                        try:
+                            cursor.execute("SELECT `plan` FROM `client_planchoice` LIMIT 1")
+                        except Exception as e:
+                            if "Unknown column 'plan'" in str(e):
+                                print("Detectado problema na tabela client_planchoice: coluna 'plan' ausente.")
+                                print("Removendo tabela problemática...")
+                                cursor.execute("DROP TABLE IF EXISTS `client_planchoice`")
+                                conn.commit()
+                                print("Tabela problemática removida.")
+            
+            conn.close()
+        except Exception as e:
+            print(f"Erro ao verificar estado do banco de dados: {e}")
+            # Continuar mesmo se houver erro, pois o migrate tentará criar as tabelas
+        
         # Executa migrações
         print("Executando migrações do Django...")
         execute_from_command_line(['manage.py', 'migrate'])
@@ -169,6 +229,46 @@ def apply_migrations():
     except Exception as e:
         print(f"ERRO ao aplicar migrações durante runtime: {e}")
         print(traceback.format_exc())
+        
+        # Tentar recuperação de erro específico: client_planchoice
+        if "Unknown column 'plan' in 'client_planchoice'" in str(e):
+            try:
+                print("Tentando recuperação de erro específico para 'client_planchoice'...")
+                
+                # Conectar diretamente para remover a tabela problemática
+                db_name = os.environ.get('MYSQL_DATABASE', 'not-set')
+                db_user = os.environ.get('MYSQL_USER', 'not-set')
+                db_host = os.environ.get('MYSQL_HOST', 'not-set')
+                db_password = os.environ.get('MYSQL_PASSWORD', '')
+                db_port = os.environ.get('MYSQL_PORT', '3306')
+                
+                conn = pymysql.connect(
+                    host=db_host,
+                    user=db_user,
+                    password=db_password,
+                    database=db_name,
+                    port=int(db_port)
+                )
+                
+                with conn.cursor() as cursor:
+                    cursor.execute("SET FOREIGN_KEY_CHECKS = 0")
+                    cursor.execute("DROP TABLE IF EXISTS `client_planchoice`")
+                    cursor.execute("SET FOREIGN_KEY_CHECKS = 1")
+                    conn.commit()
+                conn.close()
+                
+                print("Tabela problemática removida. Tentando migrações novamente...")
+                django.setup()
+                execute_from_command_line(['manage.py', 'migrate'])
+                
+                print("Recuperação bem-sucedida! Migrações aplicadas após correção.")
+                _migrations_applied = True
+                tables_created = True
+                return True
+            except Exception as e2:
+                print(f"Falha na tentativa de recuperação: {e2}")
+                return False
+                
         return False
 
 # Função para servir arquivos estáticos diretamente
@@ -328,6 +428,126 @@ try:
         def app(environ, start_response):
             path = environ.get('PATH_INFO', '')
             
+            # Verificar se é uma solicitação para limpar o banco de dados
+            if path == '/db/reset' and use_mysql:
+                # Tentar limpar todas as tabelas do banco de dados e reiniciar
+                try:
+                    db_name = os.environ.get('MYSQL_DATABASE', 'not-set')
+                    db_user = os.environ.get('MYSQL_USER', 'not-set')
+                    db_host = os.environ.get('MYSQL_HOST', 'not-set')
+                    db_password = os.environ.get('MYSQL_PASSWORD', '')
+                    db_port = os.environ.get('MYSQL_PORT', '3306')
+                    
+                    conn = pymysql.connect(
+                        host=db_host,
+                        user=db_user,
+                        password=db_password,
+                        database=db_name,
+                        port=int(db_port)
+                    )
+                    
+                    with conn.cursor() as cursor:
+                        # Obter lista de tabelas
+                        cursor.execute("SHOW TABLES")
+                        tables = cursor.fetchall()
+                        
+                        # Desativar verificação de chaves estrangeiras temporariamente
+                        cursor.execute("SET FOREIGN_KEY_CHECKS = 0")
+                        
+                        # Limpar todas as tabelas
+                        tables_dropped = []
+                        for table in tables:
+                            table_name = table[0]
+                            cursor.execute(f"DROP TABLE IF EXISTS `{table_name}`")
+                            tables_dropped.append(table_name)
+                        
+                        # Reativar verificação de chaves estrangeiras
+                        cursor.execute("SET FOREIGN_KEY_CHECKS = 1")
+                        conn.commit()
+                    conn.close()
+                    
+                    # Redefinir flags para que migrações sejam aplicadas novamente
+                    global _migrations_applied, tables_created
+                    _migrations_applied = False
+                    tables_created = False
+                    
+                    # Retornar uma página de sucesso
+                    status = '200 OK'
+                    headers = [('Content-type', 'text/html; charset=utf-8')]
+                    start_response(status, headers)
+                    
+                    response = f"""
+                    <!DOCTYPE html>
+                    <html>
+                    <head>
+                        <title>Banco de Dados Limpo - The Contrarian</title>
+                        <meta charset="UTF-8">
+                        <meta name="viewport" content="width=device-width, initial-scale=1">
+                        <style>
+                            body {{ font-family: Arial, sans-serif; line-height: 1.6; margin: 0; padding: 20px; }}
+                            .container {{ max-width: 800px; margin: 0 auto; background-color: #f8f9fa; padding: 20px; border-radius: 5px; }}
+                            .success-box {{ background-color: #d4edda; border: 1px solid #c3e6cb; padding: 15px; border-radius: 4px; margin: 20px 0; color: #155724; }}
+                            h1 {{ color: #343a40; }}
+                            ul {{ margin-top: 10px; }}
+                            a {{ color: #007bff; text-decoration: none; }}
+                            a:hover {{ text-decoration: underline; }}
+                        </style>
+                    </head>
+                    <body>
+                        <div class="container">
+                            <h1>The Contrarian Report</h1>
+                            <div class="success-box">
+                                <h2>Banco de dados limpo com sucesso!</h2>
+                                <p>Todas as tabelas foram removidas e as migrações serão aplicadas novamente quando você acessar o site.</p>
+                                <p><strong>Tabelas removidas:</strong></p>
+                                <ul>
+                                    {"".join(f"<li>{table}</li>" for table in tables_dropped)}
+                                </ul>
+                            </div>
+                            <p><a href="/">Voltar para a página principal</a></p>
+                        </div>
+                    </body>
+                    </html>
+                    """
+                    
+                    return [response.encode('utf-8')]
+                except Exception as e:
+                    # Em caso de erro, mostra uma página com o erro
+                    status = '500 Internal Server Error'
+                    headers = [('Content-type', 'text/html; charset=utf-8')]
+                    start_response(status, headers)
+                    
+                    error_message = f"""
+                    <!DOCTYPE html>
+                    <html>
+                    <head>
+                        <title>Erro - The Contrarian</title>
+                        <meta charset="UTF-8">
+                        <meta name="viewport" content="width=device-width, initial-scale=1">
+                        <style>
+                            body {{ font-family: Arial, sans-serif; line-height: 1.6; margin: 0; padding: 20px; }}
+                            .container {{ max-width: 800px; margin: 0 auto; background-color: #f8f9fa; padding: 20px; border-radius: 5px; }}
+                            .error-box {{ background-color: #f8d7da; border: 1px solid #f5c6cb; padding: 15px; border-radius: 4px; margin: 20px 0; color: #721c24; }}
+                            h1 {{ color: #343a40; }}
+                            pre {{ background-color: #f1f1f1; padding: 10px; overflow: auto; font-size: 14px; }}
+                        </style>
+                    </head>
+                    <body>
+                        <div class="container">
+                            <h1>The Contrarian Report</h1>
+                            <div class="error-box">
+                                <h2>Erro ao limpar banco de dados</h2>
+                                <p>Ocorreu um erro ao tentar limpar o banco de dados:</p>
+                                <pre>{str(e)}</pre>
+                            </div>
+                            <p><a href="/">Voltar para a página principal</a></p>
+                        </div>
+                    </body>
+                    </html>
+                    """
+                    
+                    return [error_message.encode('utf-8')]
+            
             # Aplicar migrações, se necessário, na primeira requisição
             if not _migrations_applied and use_mysql and not tables_created:
                 migrations_success = apply_migrations()
@@ -362,7 +582,10 @@ try:
                             error_app = serve_error_page(f"Erro após migrações: {str(e2)}", traceback.format_exc())
                             return error_app(environ, start_response)
                     else:
-                        error_app = serve_error_page(f"Falha ao aplicar migrações: {str(e)}", traceback.format_exc())
+                        error_app = serve_error_page(
+                            f"Falha ao aplicar migrações: {str(e)}", 
+                            f"Erro durante migrações. Para resolver, tente acessar <a href='/db/reset'>este link</a> para limpar o banco de dados."
+                        )
                         return error_app(environ, start_response)
                 else:
                     error_app = serve_error_page(f"Erro ao processar requisição: {str(e)}", traceback.format_exc())
