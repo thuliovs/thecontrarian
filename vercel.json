@@ -6,7 +6,8 @@
       "use": "@vercel/python",
       "config": { 
         "maxLambdaSize": "15mb", 
-        "runtime": "python3.9"
+        "runtime": "python3.9",
+        "pip_requirements": "requirements-vercel.txt"
       }
     },
     {
@@ -26,5 +27,9 @@
       "src": "/(.*)",
       "dest": "src/contra/wsgi_vercel.py"
     }
-  ]
+  ],
+  "env": {
+    "DISABLE_DATABASE": "True",
+    "USE_MYSQL": "True"
+  }
 } 

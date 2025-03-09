@@ -17,6 +17,10 @@ from pathlib import Path
 BASE_DIR = Path(__file__).resolve().parent
 sys.path.append(str(BASE_DIR / 'src'))
 
+# Configuração para usar PyMySQL como driver MySQL
+import pymysql
+pymysql.install_as_MySQLdb()
+
 # Configuração temporária para usar SQLite (source)
 os.environ['USE_MYSQL'] = 'False'
 

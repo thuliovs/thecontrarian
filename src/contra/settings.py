@@ -14,6 +14,17 @@ from pathlib import Path
 import os
 from decouple import config, Csv
 
+# Configuração para usar PyMySQL como driver MySQL
+import pymysql
+pymysql.install_as_MySQLdb()
+
+# Debug de variáveis de ambiente para verificar a configuração no Vercel
+print("=== ENVIRONMENT VARIABLES ===")
+print(f"USE_MYSQL: {config('USE_MYSQL', default=False)}")
+print(f"MYSQL_DATABASE: {config('MYSQL_DATABASE', default='not-set')}")
+print(f"MYSQL_HOST: {config('MYSQL_HOST', default='not-set')}")
+print("===========================")
+
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
 
