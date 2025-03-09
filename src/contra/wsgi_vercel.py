@@ -32,6 +32,11 @@ try:
 except ImportError:
     print("ERRO: Não foi possível importar PyMySQL")
 
+# Forçar o uso de MySQL se estiver no Vercel
+if os.environ.get('VERCEL', 'False').lower() == 'true':
+    print("Ambiente Vercel detectado. Forçando USE_MYSQL=True")
+    os.environ['USE_MYSQL'] = 'True'
+
 # Diagnóstico de ambiente
 print("===== DIAGNÓSTICO DO AMBIENTE =====")
 print(f"Python Version: {sys.version}")
@@ -46,34 +51,49 @@ print(f"Environment Variables: {json.dumps({k: v for k, v in os.environ.items() 
 use_mysql = os.environ.get('USE_MYSQL', 'False').lower() == 'true'
 print(f"Configurado para usar MySQL: {use_mysql}")
 
+# Verificar se as migrações já foram aplicadas
+tables_created = False
+mysql_connection_ok = False
 if use_mysql:
     # Tentar verificar conexão com MySQL
     try:
         db_name = os.environ.get('MYSQL_DATABASE', 'not-set')
         db_user = os.environ.get('MYSQL_USER', 'not-set')
         db_host = os.environ.get('MYSQL_HOST', 'not-set')
-        print(f"MySQL Database: {db_name}, User: {db_user}, Host: {db_host}")
+        db_password = os.environ.get('MYSQL_PASSWORD', '')
+        db_port = os.environ.get('MYSQL_PORT', '3306')
+        
+        print(f"MySQL Database: {db_name}, User: {db_user}, Host: {db_host}, Port: {db_port}")
         
         conn = pymysql.connect(
             host=db_host,
             user=db_user,
-            password=os.environ.get('MYSQL_PASSWORD', ''),
+            password=db_password,
             database=db_name,
-            port=int(os.environ.get('MYSQL_PORT', '3306'))
+            port=int(db_port)
         )
+        mysql_connection_ok = True
         print("Conexão com MySQL estabelecida com sucesso!")
         
-        # Tentar verificar se a tabela account_customuser existe
+        # Tentar verificar se as tabelas existem
+        tables_to_check = ['account_customuser', 'django_migrations']
+        missing_tables = []
+        
         try:
             with conn.cursor() as cursor:
-                cursor.execute("SHOW TABLES LIKE 'account_customuser'")
-                if cursor.fetchone():
-                    print("Tabela account_customuser existe!")
+                for table in tables_to_check:
+                    cursor.execute(f"SHOW TABLES LIKE '{table}'")
+                    if not cursor.fetchone():
+                        missing_tables.append(table)
+                
+                if missing_tables:
+                    print(f"Tabelas ausentes no MySQL: {', '.join(missing_tables)}")
+                    print("Será necessário aplicar migrações durante o runtime.")
                 else:
-                    print("AVISO: Tabela account_customuser não existe!")
-                    print("As migrações não foram aplicadas. Verifique se as migrações foram executadas.")
+                    print("Todas as tabelas principais existem!")
+                    tables_created = True
         except Exception as e:
-            print(f"Erro ao verificar tabela account_customuser: {e}")
+            print(f"Erro ao verificar tabelas: {e}")
         
         conn.close()
     except Exception as e:
@@ -105,6 +125,51 @@ print("==================================")
 # Configura variáveis de ambiente para o Django
 os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'contra.settings')
 os.environ['PYTHONUNBUFFERED'] = '1'  # Para garantir que os logs apareçam
+
+# Flag para controlar se as migrações já foram executadas
+_migrations_applied = False
+
+# Função para aplicar migrações
+def apply_migrations():
+    global _migrations_applied, tables_created, mysql_connection_ok
+    
+    if _migrations_applied:
+        return True
+    
+    if not use_mysql:
+        print("Não estamos usando MySQL, ignorando migrações.")
+        _migrations_applied = True
+        return True
+    
+    if tables_created:
+        print("Tabelas já existem, ignorando migrações.")
+        _migrations_applied = True
+        return True
+    
+    if not mysql_connection_ok:
+        print("Conexão com MySQL falhou, não é possível aplicar migrações.")
+        return False
+    
+    print("====== APLICANDO MIGRAÇÕES DO DJANGO DURANTE RUNTIME ======")
+    try:
+        import django
+        from django.core.management import execute_from_command_line
+        
+        # Inicializa o Django
+        django.setup()
+        
+        # Executa migrações
+        print("Executando migrações do Django...")
+        execute_from_command_line(['manage.py', 'migrate'])
+        
+        print("Migrações aplicadas com sucesso durante runtime!")
+        _migrations_applied = True
+        tables_created = True
+        return True
+    except Exception as e:
+        print(f"ERRO ao aplicar migrações durante runtime: {e}")
+        print(traceback.format_exc())
+        return False
 
 # Função para servir arquivos estáticos diretamente
 def serve_static_file(path, environ, start_response):
@@ -164,6 +229,20 @@ def serve_error_page(error_message, traceback_info):
         headers = [('Content-type', 'text/html; charset=utf-8')]
         start_response(status, headers)
         
+        # Se o erro é relacionado a banco de dados, adicionar informações específicas
+        db_info = ""
+        if use_mysql:
+            db_info = f"""
+            <div class="db-info">
+                <h3>Informações de Banco de Dados</h3>
+                <p><strong>Banco:</strong> MySQL</p>
+                <p><strong>Host:</strong> {os.environ.get('MYSQL_HOST', 'não definido')}</p>
+                <p><strong>Banco de dados:</strong> {os.environ.get('MYSQL_DATABASE', 'não definido')}</p>
+                <p><strong>Usuário:</strong> {os.environ.get('MYSQL_USER', 'não definido')}</p>
+                <p><strong>Tabelas criadas:</strong> {'Sim' if tables_created else 'Não'}</p>
+            </div>
+            """
+        
         html = f"""<!DOCTYPE html>
 <html>
 <head>
@@ -178,6 +257,7 @@ def serve_error_page(error_message, traceback_info):
         h2 {{ color: #721c24; }}
         pre {{ background-color: #f1f1f1; padding: 10px; overflow: auto; font-size: 14px; }}
         .env {{ background-color: #e9ecef; padding: 10px; border-radius: 4px; margin-top: 20px; }}
+        .db-info {{ background-color: #d1ecf1; padding: 10px; border-radius: 4px; margin: 20px 0; color: #0c5460; }}
     </style>
 </head>
 <body>
@@ -189,6 +269,8 @@ def serve_error_page(error_message, traceback_info):
             <p>Ocorreu um erro ao tentar inicializar o aplicativo. Isto pode ser devido a problemas de configuração ou conexão com o banco de dados.</p>
         </div>
         
+        {db_info}
+        
         <h3>Informações Técnicas</h3>
         <pre>{traceback_info}</pre>
         
@@ -197,6 +279,7 @@ def serve_error_page(error_message, traceback_info):
             <p><strong>Python:</strong> {sys.version}</p>
             <p><strong>PYTHONPATH:</strong> {':'.join(sys.path[:3])}...</p>
             <p><strong>Diretório Atual:</strong> {os.getcwd()}</p>
+            <p><strong>USE_MYSQL:</strong> {os.environ.get('USE_MYSQL', 'não definido')}</p>
         </div>
     </div>
 </body>
@@ -245,6 +328,17 @@ try:
         def app(environ, start_response):
             path = environ.get('PATH_INFO', '')
             
+            # Aplicar migrações, se necessário, na primeira requisição
+            if not _migrations_applied and use_mysql and not tables_created:
+                migrations_success = apply_migrations()
+                if not migrations_success and path.startswith('/account/register/'):
+                    # Se estamos tentando acessar o registro e as migrações falharam, mostrar erro específico
+                    error_app = serve_error_page(
+                        "Não foi possível aplicar migrações MySQL. A tabela account_customuser não existe.", 
+                        "As migrações do Django precisam ser executadas para criar as tabelas necessárias."
+                    )
+                    return error_app(environ, start_response)
+            
             # Se for um arquivo estático, tenta servi-lo diretamente
             if path.startswith('/static/') or path.startswith('/css/') or path.startswith('/js/') or \
                path.endswith('.css') or path.endswith('.js'):
@@ -256,8 +350,23 @@ try:
                 return django_app(environ, start_response)
             except Exception as e:
                 print(f"Erro ao processar requisição Django: {str(e)}")
-                error_app = serve_error_page(f"Erro ao processar requisição: {str(e)}", traceback.format_exc())
-                return error_app(environ, start_response)
+                # Tentar aplicar migrações se o erro for relacionado a tabelas
+                if "Table" in str(e) and "doesn't exist" in str(e) and not _migrations_applied:
+                    print("Erro relacionado a tabela inexistente. Tentando aplicar migrações...")
+                    migrations_success = apply_migrations()
+                    if migrations_success:
+                        # Se as migrações foram aplicadas com sucesso, tentar novamente
+                        try:
+                            return django_app(environ, start_response)
+                        except Exception as e2:
+                            error_app = serve_error_page(f"Erro após migrações: {str(e2)}", traceback.format_exc())
+                            return error_app(environ, start_response)
+                    else:
+                        error_app = serve_error_page(f"Falha ao aplicar migrações: {str(e)}", traceback.format_exc())
+                        return error_app(environ, start_response)
+                else:
+                    error_app = serve_error_page(f"Erro ao processar requisição: {str(e)}", traceback.format_exc())
+                    return error_app(environ, start_response)
             
     except Exception as e:
         error_message = f"Erro ao inicializar aplicação Django: {str(e)}"
