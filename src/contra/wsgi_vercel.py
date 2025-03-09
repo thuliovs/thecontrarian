@@ -42,6 +42,44 @@ print(f"Base Directory: {BASE_DIR}")
 print(f"Python Path: {sys.path}")
 print(f"Environment Variables: {json.dumps({k: v for k, v in os.environ.items() if not k.startswith('PATH')})}")
 
+# Verificar se estamos usando MySQL
+use_mysql = os.environ.get('USE_MYSQL', 'False').lower() == 'true'
+print(f"Configurado para usar MySQL: {use_mysql}")
+
+if use_mysql:
+    # Tentar verificar conexão com MySQL
+    try:
+        db_name = os.environ.get('MYSQL_DATABASE', 'not-set')
+        db_user = os.environ.get('MYSQL_USER', 'not-set')
+        db_host = os.environ.get('MYSQL_HOST', 'not-set')
+        print(f"MySQL Database: {db_name}, User: {db_user}, Host: {db_host}")
+        
+        conn = pymysql.connect(
+            host=db_host,
+            user=db_user,
+            password=os.environ.get('MYSQL_PASSWORD', ''),
+            database=db_name,
+            port=int(os.environ.get('MYSQL_PORT', '3306'))
+        )
+        print("Conexão com MySQL estabelecida com sucesso!")
+        
+        # Tentar verificar se a tabela account_customuser existe
+        try:
+            with conn.cursor() as cursor:
+                cursor.execute("SHOW TABLES LIKE 'account_customuser'")
+                if cursor.fetchone():
+                    print("Tabela account_customuser existe!")
+                else:
+                    print("AVISO: Tabela account_customuser não existe!")
+                    print("As migrações não foram aplicadas. Verifique se as migrações foram executadas.")
+        except Exception as e:
+            print(f"Erro ao verificar tabela account_customuser: {e}")
+        
+        conn.close()
+    except Exception as e:
+        print(f"Erro ao conectar ao MySQL: {e}")
+        print("Verifique se as credenciais do MySQL estão corretas e o banco de dados existe.")
+
 # Verificar arquivos estáticos disponíveis
 static_dirs = [
     os.path.join(os.getcwd(), 'staticfiles_build'), 

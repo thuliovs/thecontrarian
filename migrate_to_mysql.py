@@ -37,36 +37,47 @@ def export_from_sqlite():
     """Exporta todos os dados do SQLite para arquivos JSON"""
     print("Exportando dados do SQLite...")
     
-    # Pasta para armazenar os arquivos de exportação
-    export_dir = BASE_DIR / 'data_export'
+    # Cria diretório para os arquivos de exportação
+    export_dir = BASE_DIR / 'export_data'
     export_dir.mkdir(exist_ok=True)
     
-    # Lista todas as aplicações e modelos registrados
-    for app_config in apps.get_app_configs():
-        app_name = app_config.name
-        
-        # Pula aplicações internas do Django
-        if app_name.startswith('django.') or app_name in ['corsheaders', 'rest_framework']:
-            continue
-        
+    # Lista de aplicações instaladas
+    installed_apps = [app_config.label for app_config in apps.get_app_configs() 
+                     if not app_config.name.startswith('django.')]
+    
+    # Exporta dados de cada aplicação
+    for app_name in installed_apps:
         print(f"Exportando aplicação: {app_name}")
         
-        # Cria um diretório para a aplicação
+        # Cria diretório para a aplicação
         app_dir = export_dir / app_name
         app_dir.mkdir(exist_ok=True)
         
-        # Exporta dados para cada modelo na aplicação
-        for model in app_config.get_models():
-            model_name = model.__name__
-            output_file = app_dir / f"{model_name}.json"
+        # Lista de modelos da aplicação
+        try:
+            app_models = apps.get_app_config(app_name).get_models()
             
-            # Usa dumpdata para exportar os dados
-            try:
-                with open(output_file, 'w') as f:
-                    call_command('dumpdata', f"{app_name}.{model_name}", indent=4, stdout=f)
-                print(f"  - Exportado {model_name} para {output_file}")
-            except Exception as e:
-                print(f"  - Erro ao exportar {model_name}: {e}")
+            for model in app_models:
+                model_name = model._meta.model_name
+                print(f"  - Exportando modelo: {model_name}")
+                
+                # Nome do arquivo de exportação
+                export_file = app_dir / f"{model_name}.json"
+                
+                # Exporta dados usando dumpdata do Django
+                try:
+                    with open(export_file, 'w') as f:
+                        call_command('dumpdata', f"{app_name}.{model_name}", format='json', indent=2, stdout=f)
+                    
+                    # Verifica se exportou algum dado
+                    if export_file.stat().st_size > 0:
+                        print(f"    Dados exportados para {export_file}")
+                    else:
+                        print(f"    Nenhum dado encontrado para {model_name}")
+                except Exception as e:
+                    print(f"    Erro ao exportar {model_name}: {e}")
+        except Exception as e:
+            print(f"  Erro ao processar aplicação {app_name}: {e}")
     
     print("Exportação concluída.")
     return export_dir
@@ -77,6 +88,15 @@ def import_to_mysql(export_dir):
     
     # Altera a configuração para usar MySQL
     os.environ['USE_MYSQL'] = 'True'
+    
+    # Define variáveis de ambiente necessárias para o MySQL se ainda não estiverem definidas
+    if 'MYSQL_HOST' not in os.environ:
+        print("Definindo variáveis de ambiente para MySQL...")
+        os.environ['MYSQL_HOST'] = input("MySQL Host: ")
+        os.environ['MYSQL_USER'] = input("MySQL User: ")
+        os.environ['MYSQL_PASSWORD'] = input("MySQL Password: ")
+        os.environ['MYSQL_DATABASE'] = input("MySQL Database: ")
+        os.environ['MYSQL_PORT'] = input("MySQL Port [3306]: ") or "3306"
     
     # Reinicia o Django com as novas configurações (MySQL)
     from django.db import connections

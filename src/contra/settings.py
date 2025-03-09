@@ -112,14 +112,31 @@ WSGI_APPLICATION = 'contra.wsgi.application'
 # Configurações de banco de dados
 USE_MYSQL = config('USE_MYSQL', default=False, cast=bool)
 
-# Na primeira fase, usaremos SQLite mesmo se USE_MYSQL=True
-# Isso garante que podemos pelo menos carregar a home page
-DATABASES = {
-    'default': {
-        'ENGINE': 'django.db.backends.sqlite3',
-        'NAME': os.path.join(BASE_DIR, 'db.sqlite3') if VERCEL else BASE_DIR / 'db.sqlite3',
+# Configuração de bancos de dados
+if USE_MYSQL:
+    print("Usando banco de dados MySQL")
+    DATABASES = {
+        'default': {
+            'ENGINE': 'django.db.backends.mysql',
+            'NAME': config('MYSQL_DATABASE'),
+            'USER': config('MYSQL_USER'),
+            'PASSWORD': config('MYSQL_PASSWORD'),
+            'HOST': config('MYSQL_HOST'),
+            'PORT': config('MYSQL_PORT', default='3306'),
+            'OPTIONS': {
+                'charset': 'utf8mb4',
+                'use_unicode': True,
+            }
+        }
     }
-}
+else:
+    print("Usando banco de dados SQLite")
+    DATABASES = {
+        'default': {
+            'ENGINE': 'django.db.backends.sqlite3',
+            'NAME': os.path.join(BASE_DIR, 'db.sqlite3') if VERCEL else BASE_DIR / 'db.sqlite3',
+        }
+    }
 
 # Debug extra para verificar o banco de dados
 print(f"Database engine: {DATABASES['default']['ENGINE']}")

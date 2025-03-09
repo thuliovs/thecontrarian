@@ -7,6 +7,11 @@ echo "Directory listing:"
 ls -la
 echo "===== Environment information ====="
 echo "Node version: $(node --version 2>&1 || echo 'Node not found')"
+echo "Python versions:"
+python --version 2>&1 || echo "Python não encontrado"
+python3 --version 2>&1 || echo "Python3 não encontrado"
+python3.9 --version 2>&1 || echo "Python3.9 não encontrado"
+
 echo "===== Creating static directories ====="
 
 # Cria pasta para arquivos estáticos - vamos pular a parte de collectstatic
@@ -42,20 +47,114 @@ mkdir -p staticfiles_build/static/css
 cp staticfiles_build/css/styles.css staticfiles_build/static/css/
 cp staticfiles_build/css/style.css staticfiles_build/static/css/
 
-# Tentar criar o banco de dados vazio
-echo "===== Creating empty SQLite database ====="
+# Determinar o interpretador Python disponível
 if command -v python3.9 &> /dev/null; then
-    python3.9 create_empty_db.py
+    PYTHON_CMD="python3.9"
 elif command -v python3 &> /dev/null; then
-    python3 create_empty_db.py
+    PYTHON_CMD="python3"
 elif command -v python &> /dev/null; then
-    python create_empty_db.py
+    PYTHON_CMD="python"
 else
-    echo "Não foi possível criar o banco de dados SQLite: Python não encontrado"
-    # Cria um diretório para o banco de dados caso não exista
-    mkdir -p src
-    # Cria um arquivo vazio para simular o banco de dados
-    touch src/db.sqlite3
+    echo "Não foi possível encontrar um interpretador Python"
+    PYTHON_CMD=""
+fi
+
+# Verificar se vamos usar MySQL ou SQLite
+USE_MYSQL=$(grep -q "\"USE_MYSQL\": \"True\"" vercel.json && echo "True" || echo "False")
+echo "USE_MYSQL: $USE_MYSQL"
+
+if [ "$USE_MYSQL" == "True" ]; then
+    echo "===== Configurando para usar MySQL ====="
+    
+    if [ -n "$PYTHON_CMD" ]; then
+        # Criar um script para executar migrações no MySQL
+        echo "Criando script para executar migrações no MySQL..."
+        cd src || echo "Não foi possível mudar para o diretório src"
+        
+        cat > run_mysql_migrations.py << 'EOF'
+#!/usr/bin/env python
+
+import os
+import sys
+import django
+
+# Garantir que vamos usar MySQL
+os.environ['USE_MYSQL'] = 'True'
+
+# Configurar o ambiente do Django
+os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'contra.settings')
+sys.path.insert(0, os.path.abspath(os.path.dirname(__file__)))
+django.setup()
+
+# Verificar a conexão com o banco de dados
+from django.db import connections
+try:
+    conn = connections['default']
+    conn.cursor()
+    print("Conexão com o MySQL estabelecida com sucesso!")
+except Exception as e:
+    print(f"Erro ao conectar ao MySQL: {e}")
+    sys.exit(1)
+
+# Executar migrações
+from django.core.management import execute_from_command_line
+
+print("Executando migrações do Django para MySQL...")
+execute_from_command_line(['manage.py', 'migrate'])
+print("Migrações MySQL concluídas.")
+EOF
+        
+        # Executar o script de migrações MySQL
+        echo "Executando migrações para MySQL..."
+        $PYTHON_CMD run_mysql_migrations.py || echo "Falha ao executar migrações para MySQL"
+        cd ..
+    else
+        echo "Não foi possível executar migrações para MySQL: Python não encontrado"
+    fi
+else
+    echo "===== Configurando para usar SQLite ====="
+    
+    # Tentar criar o banco de dados SQLite e executar migrações
+    echo "===== Creating SQLite database and running migrations ====="
+    if [ -n "$PYTHON_CMD" ]; then
+        # Criar o banco de dados e preparar o ambiente
+        echo "Criando banco de dados SQLite com $PYTHON_CMD"
+        $PYTHON_CMD create_empty_db.py
+        
+        # Tentativa de executar migrações
+        echo "Executando migrações do Django para SQLite..."
+        cd src || echo "Não foi possível mudar para o diretório src"
+        
+        cat > run_migrations.py << 'EOF'
+#!/usr/bin/env python
+
+import os
+import sys
+import django
+
+# Configurar o ambiente do Django
+os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'contra.settings')
+sys.path.insert(0, os.path.abspath(os.path.dirname(__file__)))
+django.setup()
+
+# Executar migrações
+from django.core.management import execute_from_command_line
+
+print("Executando migrações do Django para SQLite...")
+execute_from_command_line(['manage.py', 'migrate'])
+print("Migrações SQLite concluídas.")
+EOF
+        
+        # Executar o script de migrações
+        $PYTHON_CMD run_migrations.py || echo "Falha ao executar migrações para SQLite"
+        cd ..
+    else
+        echo "Não foi possível criar o banco de dados SQLite: Python não encontrado"
+        # Cria um diretório para o banco de dados caso não exista
+        mkdir -p src
+        # Cria um arquivo vazio para simular o banco de dados
+        touch src/db.sqlite3
+    fi
 fi
 
 echo "Static files structure created successfully:"

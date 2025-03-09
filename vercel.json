@@ -53,7 +53,7 @@
   "env": {
     "PYTHONPATH": ".:./src",
     "DISABLE_DATABASE": "False",
-    "USE_MYSQL": "False",
+    "USE_MYSQL": "True",
     "VERCEL": "True",
     "DEBUG": "True"
   }
