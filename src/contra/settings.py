@@ -12,7 +12,7 @@ https://docs.djangoproject.com/en/5.1/ref/settings/
 
 from pathlib import Path
 import os
-import decouple
+from decouple import config, Csv
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
@@ -22,13 +22,13 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 # See https://docs.djangoproject.com/en/5.1/howto/deployment/checklist/
 
 # SECURITY WARNING: keep the secret key used in production secret!
-SECRET_KEY = os.environ.get('SECRET_KEY', 'django-insecure-91@r8e!+2*)^ry403*&8$4m@a0^_=an+7vfp3c*335bq1v1%n-')
+SECRET_KEY = config('SECRET_KEY', default='django-insecure-91@r8e!+2*)^ry403*&8$4m@a0^_=an+7vfp3c*335bq1v1%n-')
 
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = os.environ.get('DEBUG', 'True') == 'True'
+DEBUG = config('DEBUG', default=True, cast=bool)
 
-ALLOWED_HOSTS = ['*', '.vercel.app']
-VERCEL_DEPLOYMENT = os.environ.get('VERCEL_DEPLOYMENT', 'False') == 'True'
+ALLOWED_HOSTS = config('ALLOWED_HOSTS', default='*', cast=Csv())
+VERCEL_DEPLOYMENT = config('VERCEL_DEPLOYMENT', default=False, cast=bool)
 
 
 # Application definition
@@ -91,14 +91,26 @@ WSGI_APPLICATION = 'contra.wsgi.application'
 # Database
 # https://docs.djangoproject.com/en/5.1/ref/settings/#databases
 
-if VERCEL_DEPLOYMENT:
+# Usa as variáveis de ambiente ou valores padrão para configurar o MySQL
+# Usa SQLite como fallback se as variáveis de ambiente do MySQL não estiverem definidas
+USE_MYSQL = config('USE_MYSQL', default=False, cast=bool)
+
+if USE_MYSQL:
     DATABASES = {
         'default': {
-            'ENGINE': 'django.db.backends.sqlite3',
-            'NAME': os.path.join(BASE_DIR, 'db.sqlite3'),
+            'ENGINE': 'django.db.backends.mysql',
+            'NAME': config('MYSQL_DATABASE', default='thecontrarian'),
+            'USER': config('MYSQL_USER', default='root'),
+            'PASSWORD': config('MYSQL_PASSWORD', default=''),
+            'HOST': config('MYSQL_HOST', default='localhost'),
+            'PORT': config('MYSQL_PORT', default='3306'),
+            'OPTIONS': {
+                'init_command': "SET sql_mode='STRICT_TRANS_TABLES'"
+            }
         }
     }
 else:
+    # Manter SQLite como opção alternativa para desenvolvimento local
     DATABASES = {
         'default': {
             'ENGINE': 'django.db.backends.sqlite3',
@@ -165,7 +177,7 @@ DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
 ########## PAYPAL SETTINGS ##########
 
-PAYPAL_CLIENT_ID : str = decouple.config('PAYPAL_CLIENT_ID')
-PAYPAL_SECRET_ID : str = decouple.config('PAYPAL_SECRET_ID')
-PAYPAL_AUTH_URL : str = decouple.config('PAYPAL_AUTH_URL')
-PAYPAL_BILLING_SUBSCRIPTIONS_URL: str = decouple.config('PAYPAL_BILLING_SUBSCRIPTIONS_URL')
+PAYPAL_CLIENT_ID : str = config('PAYPAL_CLIENT_ID')
+PAYPAL_SECRET_ID : str = config('PAYPAL_SECRET_ID')
+PAYPAL_AUTH_URL : str = config('PAYPAL_AUTH_URL')
+PAYPAL_BILLING_SUBSCRIPTIONS_URL: str = config('PAYPAL_BILLING_SUBSCRIPTIONS_URL')

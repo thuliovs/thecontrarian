@@ -137,3 +137,50 @@ See the LICENSE file for details.
 3. Commit your changes
 4. Push to the branch
 5. Create a new Pull Request 
+
+## Migração de SQLite para MySQL
+
+Para migrar o banco de dados do SQLite para o MySQL, siga estas etapas:
+
+### Pré-requisitos
+- MySQL instalado e em execução
+- Um banco de dados MySQL criado para o projeto
+- Os pacotes Python necessários instalados: `pip install -r requirements.txt`
+
+### Passos para Migração
+
+1. **Configure o arquivo .env**
+   - Copie o arquivo `.env.example` para `.env` (se ainda não existir)
+   - Defina as variáveis de configuração do MySQL:
+     ```
+     USE_MYSQL=True
+     MYSQL_DATABASE=thecontrarian
+     MYSQL_USER=seu_usuario_mysql
+     MYSQL_PASSWORD=sua_senha_mysql
+     MYSQL_HOST=localhost
+     MYSQL_PORT=3306
+     ```
+
+2. **Execute o script de migração**
+   ```bash
+   python migrate_to_mysql.py
+   ```
+   
+   Este script irá:
+   - Exportar todos os dados do SQLite para arquivos JSON
+   - Criar as tabelas necessárias no MySQL
+   - Importar os dados do SQLite para o MySQL
+
+3. **Verifique a migração**
+   - Confira se os dados foram migrados corretamente acessando o MySQL
+   - Execute a aplicação com o MySQL configurado
+
+### Solução de Problemas
+
+- **Erro de conexão com o MySQL**: Verifique as credenciais no arquivo `.env` e garanta que o servidor MySQL está em execução.
+- **Erros de migração**: Se houver problemas durante a migração, verifique os logs para identificar o erro específico.
+- **Incompatibilidades de dados**: Pode ser necessário ajustar manualmente alguns dados se houver problemas de compatibilidade entre SQLite e MySQL.
+
+### Voltar para SQLite (se necessário)
+
+Para voltar a usar SQLite, simplesmente defina `USE_MYSQL=False` no arquivo `.env` ou remova esta variável. 

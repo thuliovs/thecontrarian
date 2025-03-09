@@ -7,3 +7,4 @@ httpx
 python-decouple
 whitenoise
 gunicorn
+mysqlclient
