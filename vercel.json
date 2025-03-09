@@ -29,8 +29,10 @@
     }
   ],
   "env": {
+    "PYTHONPATH": ".:./src",
     "DISABLE_DATABASE": "False",
-    "USE_MYSQL": "True",
-    "PYTHONPATH": ".:./src"
+    "USE_MYSQL": "False",
+    "VERCEL": "True",
+    "DEBUG": "True"
   }
 } 

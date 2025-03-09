@@ -1,0 +1,2 @@
+Este arquivo é criado para verificar permissões de escrita no diretório src durante o deploy no Vercel.
+Tempo de criação: {{ timestamp }} 

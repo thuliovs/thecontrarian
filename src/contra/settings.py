@@ -40,8 +40,13 @@ SECRET_KEY = config('SECRET_KEY', default='django-insecure-91@r8e!+2*)^ry403*&8$
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = config('DEBUG', default=True, cast=bool)
 
+# Definir VERCEL como True se estivermos no ambiente Vercel
+VERCEL = config('VERCEL', default=False, cast=bool)
 ALLOWED_HOSTS = config('ALLOWED_HOSTS', default='*', cast=Csv())
-VERCEL_DEPLOYMENT = config('VERCEL_DEPLOYMENT', default=False, cast=bool)
+
+# Para ambiente Vercel, aceitamos qualquer host
+if VERCEL:
+    ALLOWED_HOSTS = ['*', '.vercel.app', '.thulio.tech']
 
 
 # Application definition
@@ -104,32 +109,21 @@ WSGI_APPLICATION = 'contra.wsgi.application'
 # Database
 # https://docs.djangoproject.com/en/5.1/ref/settings/#databases
 
-# Usa as variáveis de ambiente ou valores padrão para configurar o MySQL
-# Usa SQLite como fallback se as variáveis de ambiente do MySQL não estiverem definidas
+# Configurações de banco de dados
 USE_MYSQL = config('USE_MYSQL', default=False, cast=bool)
 
-if USE_MYSQL:
-    DATABASES = {
-        'default': {
-            'ENGINE': 'django.db.backends.mysql',
-            'NAME': config('MYSQL_DATABASE', default='thecontrarian'),
-            'USER': config('MYSQL_USER', default='root'),
-            'PASSWORD': config('MYSQL_PASSWORD', default=''),
-            'HOST': config('MYSQL_HOST', default='localhost'),
-            'PORT': config('MYSQL_PORT', default='3306'),
-            'OPTIONS': {
-                'init_command': "SET sql_mode='STRICT_TRANS_TABLES'"
-            }
-        }
+# Na primeira fase, usaremos SQLite mesmo se USE_MYSQL=True
+# Isso garante que podemos pelo menos carregar a home page
+DATABASES = {
+    'default': {
+        'ENGINE': 'django.db.backends.sqlite3',
+        'NAME': os.path.join(BASE_DIR, 'db.sqlite3') if VERCEL else BASE_DIR / 'db.sqlite3',
     }
-else:
-    # Manter SQLite como opção alternativa para desenvolvimento local
-    DATABASES = {
-        'default': {
-            'ENGINE': 'django.db.backends.sqlite3',
-            'NAME': BASE_DIR / 'db.sqlite3',
-        }
-    }
+}
+
+# Debug extra para verificar o banco de dados
+print(f"Database engine: {DATABASES['default']['ENGINE']}")
+print(f"Database name: {DATABASES['default']['NAME']}")
 
 
 # Password validation
@@ -169,7 +163,7 @@ USE_TZ = True
 STATIC_URL = '/static/'
 
 # Configuração específica para o Vercel
-if VERCEL_DEPLOYMENT:
+if VERCEL:
     STATIC_ROOT = os.path.join(BASE_DIR, 'staticfiles')
     STATICFILES_DIRS = [
         os.path.join(BASE_DIR, 'static'),

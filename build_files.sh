@@ -26,6 +26,22 @@ echo "// Base JavaScript file for The Contrarian Report" > staticfiles_build/js/
 # Criando arquivo CSS específico para o Vercel
 echo "/* Vercel deployment CSS */" > staticfiles_build/static/vercel.css
 
+# Tentar criar o banco de dados vazio
+echo "===== Creating empty SQLite database ====="
+if command -v python3.9 &> /dev/null; then
+    python3.9 create_empty_db.py
+elif command -v python3 &> /dev/null; then
+    python3 create_empty_db.py
+elif command -v python &> /dev/null; then
+    python create_empty_db.py
+else
+    echo "Não foi possível criar o banco de dados SQLite: Python não encontrado"
+    # Cria um diretório para o banco de dados caso não exista
+    mkdir -p src
+    # Cria um arquivo vazio para simular o banco de dados
+    touch src/db.sqlite3
+fi
+
 echo "Static files structure created successfully:"
 find staticfiles_build -type f | sort
 
