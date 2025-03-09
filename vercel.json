@@ -29,7 +29,7 @@
     }
   ],
   "env": {
-    "DISABLE_DATABASE": "True",
+    "DISABLE_DATABASE": "False",
     "USE_MYSQL": "True"
   }
 } 

@@ -23,6 +23,8 @@ print("=== ENVIRONMENT VARIABLES ===")
 print(f"USE_MYSQL: {config('USE_MYSQL', default=False)}")
 print(f"MYSQL_DATABASE: {config('MYSQL_DATABASE', default='not-set')}")
 print(f"MYSQL_HOST: {config('MYSQL_HOST', default='not-set')}")
+print(f"MYSQL_USER: {config('MYSQL_USER', default='not-set')}")
+print(f"DISABLE_DATABASE: {config('DISABLE_DATABASE', default=False)}")
 print("===========================")
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
