@@ -1,0 +1,22 @@
+{% extends 'client/_main.html' %}
+{% load i18n %}
+
+{% block account_label %}
+    <span>
+        {% if subscription_plan == 'Premium' %}
+            <span class="text-account-premium">Premium Client</span>
+        {% elif subscription_plan == 'Standard' %}
+            <span class="text-account-client">Standard Client</span>
+        {% endif %}
+    </span>
+{% endblock %}
+{% block content %}
+    <div class="container bg-white shadow p-5 mt-5 form-layout">
+        <h3 class="text-center">{% translate 'Subscription Canceled' %}</h3>
+        <p class="text-center" style="margin-bottom: 0px;">{% translate 'Your subscription has been cancelled successfully.' %}</p>
+        <p class="text-center" style="margin-bottom: 30px;">{% translate 'Thank you for using our service!' %}</p>
+        
+        <hr width="100%" style="margin-top: 0px; margin-bottom: 20px;">
+        <a href="{% url 'client-dashboard' %}" class="btn-primary w-100" style="margin-bottom: 0px; margin-top: 0px;">{% translate 'Return to dashboard' %}</a>
+    </div>
+{% endblock %}

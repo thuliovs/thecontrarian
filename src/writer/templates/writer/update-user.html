@@ -1,0 +1,39 @@
+{% extends 'writer/_main.html' %}
+{% load i18n %}
+{% load crispy_forms_tags %}
+
+{% block content %}
+    <div class="container bg-white shadow p-5 mt-5 mb-5 text-center form-layout-update-user">
+        <h3 class="text-center">{% translate 'Account Type' %}</h3>
+        <p style="margin-bottom: 0px;" >{% translate "It's a pleasure have you here" %}</p>
+        
+        <p class="text-account-writer" style="font-size: 3rem; margin-bottom: 0px; margin-top: 20px;">
+            {% translate 'Writer Account' %}
+        </p>
+    </div>
+
+
+    <div class="container bg-white shadow p-5 mt-5 mb-5 form-layout-update-user">
+        <h3 class="text-center">{% translate 'Update Account Settings' %}</h3>
+        <p class="text-center mb-5">{% translate 'You may update the account settings below:' %}</p>
+        <form method="POST" autocomplete="OFF">
+            {% csrf_token %}
+
+            {{ update_user_form | crispy }}
+            
+            <p style="margin-top: 25px;" class="text-center">
+                {% translate "Want to update your password?" %}
+                <a href="{% url 'update-password-writer' %}">{% translate "Change Password" %}</a>
+            </p>
+            <hr width="100%" style="margin-top: 30px; margin-bottom: 20px;">
+            <div class="d-flex justify-content-between align-items-center no-wrap" style="gap: 20px; margin-bottom: 12px;">
+                <input class="btn-primary" style="margin: 0;" type="submit" value="{% translate 'Update' %}">
+                <a href="{% url 'delete-account' %}" class="btn-danger" style="width: 100%; margin: 0; ">
+                    {% translate 'Delete Account' %}
+                </a>
+            </div>
+            <a href="{% url 'logout' %}" class="btn-home w-100">{% translate 'Logout now' %}</a>
+        </form>
+    </div>
+
+{% endblock %}

@@ -1,0 +1,31 @@
+{% if messages %}
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        // Configuração do Toastr
+        toastr.options = {
+            "closeButton": false,
+            "progressBar": true,
+            "positionClass": "toast-top-right",
+            "showDuration": "300",
+            "hideDuration": "1000",
+            "timeOut": "5000",
+            "extendedTimeOut": "1000",
+        };
+        
+        // Exibir mensagens
+        {% for message in messages %}
+            {% if message.tags == 'success' %}
+                toastr.success('{{ message }}');
+            {% elif message.tags == 'info' %}
+                toastr.info('{{ message }}');
+            {% elif message.tags == 'warning' %}
+                toastr.warning('{{ message }}');
+            {% elif message.tags == 'error' %}
+                toastr.error('{{ message }}');
+            {% else %}
+                toastr.info('{{ message }}');
+            {% endif %}
+        {% endfor %}
+    });
+</script>
+{% endif %} 

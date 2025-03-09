@@ -1,0 +1,21 @@
+{% extends 'writer/_main.html' %}
+{% load i18n %}
+{% load crispy_forms_tags %}
+
+{% block content %}
+    <div class="general-container">
+        <div class="container bg-white shadow p-5 mt-5 form-layout">
+            <h3 class="text-center">{% translate 'Create Article' %}</h3>
+            <p class="text-center mb-5">{% translate 'Fill in the form below to create a new article.' %}</p>
+            <form method="POST" autocomplete="OFF">
+                {% csrf_token %}
+
+                {{ create_article_form | crispy }}
+
+                <input class="btn-primary w-100" 
+                type="submit" value="{% translate 'Create Article' %}">
+                <a href="{% url 'writer-dashboard' %}" class="btn-home w-100 mt-0">{% translate 'Cancel' %}</a>
+            </form>
+        </div>
+    </div>
+{% endblock %}

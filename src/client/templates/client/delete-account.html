@@ -1,0 +1,41 @@
+{% extends 'client/_main.html' %}
+{% load i18n %}
+
+{% block account_label %}
+    <span>
+        {% if subscription_plan == 'Premium' %}
+            <span class="text-account-premium">Premium Client</span>
+        {% elif subscription_plan == 'Standard' %}
+            <span class="text-account-client">Standard Client</span>    
+        {% else %}
+            <span class="text-account-no-subscription">No subscription</span>
+        {% endif %}
+    </span>
+{% endblock %}
+
+{% block content %}
+    <div class="container bg-white shadow p-5 mt-5 form-layout">
+        <h3 class="text-center">{% translate 'Sure? Want to delete your account?' %}</h3>
+        <p class="text-center" style="margin-bottom: 40px;">{% translate 'If you have a subscription, it will be automatically cancelled.' %}</p>
+        <form method="POST" autocomplete="OFF" class="text-center">
+            {% csrf_token %}
+
+            <h5 class="text-center" style="margin-bottom: 30px; font-size: 1.2rem;">{% translate 'Email:' %} {{ user.email }}</h5>
+            <h5 class="text-center" style="margin-bottom: 30px; font-size: 1.2rem;">{% translate 'Full Name:' %} {{ user.first_name }} {{ user.last_name }}</h5>
+            <h5 style="margin-bottom: 40px; font-size: 1.2rem;">
+                {% translate 'Subscription:' %} 
+                <span class="{% if subscription_plan == 'Premium' %}text-account-premium
+                {% elif subscription_plan == 'Standard' %}text-account-client
+                {% else %}text-account-no-subscription{% endif %}" style="font-size: 1.3rem; font-weight: bold;">
+                    {{ subscription_plan }}
+                </span>
+            </h5>
+            
+            <hr width="100%" style="margin-top: 0px; margin-bottom: 20px;">
+            <div class="d-flex justify-content-between align-items-center" style="gap: 20px;">
+                <input class="btn-danger m-0" style="background-color: #a80000;color: #fff;" type="submit" value="{% translate 'Delete' %}">
+                <a href="{% url 'update-client' %}" class="btn-home m-0">{% translate 'Go back' %}</a>
+            </div>
+        </form>
+    </div>
+{% endblock %}

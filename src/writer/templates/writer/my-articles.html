@@ -1,0 +1,49 @@
+{% extends 'writer/_main.html' %}
+{% load i18n %}
+
+{% block content %}
+
+    {% if not my_articles %}
+        <div class="container bg-white shadow p-5 form-layout-article text-center" style="position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%);">
+            <h5>{% translate "You still haven't written any article" %}</h5>
+            <p>
+                <strong>
+                    <em>{% translate "What's your perspective on the market right now?" %}</em>
+                </strong>
+            </p>
+            <a href="{% url 'create-article' %}" class="btn-primary" style="margin: 0; margin-top: 24px;">
+                {% translate "Start writing your first article" %}
+            </a>
+        </div>
+    {% endif %}
+
+    {% for article in my_articles %}
+        <div class="container bg-white shadow p-5 mt-5 form-layout-article {% if article.is_premium %}premium-article{% endif %}">
+            <h3>{{ article.title }}</h3>
+            <p>
+                <strong>
+                    {% if article.is_premium %}
+                        <span class="text-article-premium">🌟 {% translate 'Premium Article' %}</span>
+                    {% else %}
+                        🗑️ {% translate 'Standard Article' %}
+                    {% endif %}
+                </strong>
+            </p>
+            <p>
+                {{ article.content }}
+            </p>
+            <hr>
+            <div class="d-flex justify-content-between align-items-center no-wrap">
+                <em>{{ article.date_posted }}</em>
+                <div class="d-flex align-items-center no-wrap" style="gap: 20px;">
+                    <a href="{% url 'update-article' article.id %}" class="btn-home" style="width: 200px; margin: 0;">
+                        {% translate 'Update' %}
+                    </a>
+                    <a href="{% url 'delete-article' article.id %}" class="btn-danger" style="width: 200px; margin: 0; ">
+                        {% translate 'Delete' %}
+                    </a>
+                </div>
+            </div>
+        </div>
+    {% endfor %}
+{% endblock %}

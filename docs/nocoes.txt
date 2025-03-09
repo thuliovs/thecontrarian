@@ -1,0 +1,101 @@
+o Algumas Noções Importantes em Django (e não só...)
+
+    - app:
+
+        ..  O Django é conhecido pela sua estrutura de aplicações única e 
+            totalmente geridas. 
+
+        ..  Para cada funcionalidade, uma aplicação pode ser criada como um 
+            módulo completamente independente.
+
+        ..  As apps podem ser reutilizadas noutros projectos
+
+        ..  Já vem com apps pré-definidas
+
+    - Modelos
+
+        ..  Um modelo (ie, um entidade do modelo de dados => poderá dar origem
+            a uma tabela na BD) cria-se a partir de uma classe em Python
+
+        ..  Esta classe herda de uma classe Model do Django
+
+    - Custom User Model
+
+        ..  Vamos usar modelo específico para definir um User
+
+        ..  Devemos herdar de AbstractUser ou de AbstractBaseUser
+
+        ..  Como queremos substituir o campo de login - username->email - e 
+            também queremos campos extra, herdamos de AbstractBaseUser
+
+    - Form:
+
+        ..  Classe que descreve um formulário para introdução de dados, e como
+            é que ele deve ser apresentado
+
+        ..  Os campos de um Form são mapeados para <input> (do mesmo modo que
+            campos de um Model são mapeados para campos da BD)
+
+        .. Ver:
+
+            ~   https://docs.djangoproject.com/en/5.1/topics/forms/
+            ~   https://docs.djangoproject.com/en/5.1/topics/forms/modelforms/ 
+            ~   from django.contrib.auth.forms import UserCreationForm
+            ~   from django.contrib.auth.forms import AuthenticationForm
+
+    - ModelForm
+
+        ..  Ao construírmos uma app com suporte em BD, é provável que 
+            necessitemos de forms que seguem (ie, mapeiam os seus campos)
+            os modelos. Neste caso, vamos ter campos no form cuja definição 
+            é idêntica à dos modelos. Seria redundante defini-los duas vezes 
+            (no Form e no Model)
+
+        ..  Ou seja, um ModelForm mapeia campos dos Model's em elementos <input>
+
+        ..  Um ModelForm é um Form que automaticamente consegue gerar certos
+            campos a partir de um Model. Os campos que são gerados dependem do
+            conteúdo da classe Meta e dos campos que já foram declarados no 
+            próprio ModelForm.
+
+        ..  Basicamente, ModelForm apenas gera os campos que não estão presentes
+            no form, ou que, por outras palavras, não foram definidos
+            declarativamente (?)
+
+    - UserCreationForm
+
+        ..  Form que é utilizador parar criar novos utilizadores. Tira partido
+            do modelo User ou de modelos derivados deste (como será o nosso
+            CustomerUser)
+
+    - class Meta
+
+        ..  Classe "embebida" (ou embutida) usada para configurar o ModelForm 
+            em termos de um determinado Model.
+
+    - Herança de templates:
+
+        ..  Mecanismo que permite construir um template de base (análogo a uma
+            superclasse em POO), designado de template "pai" (parent), que
+            depois pode ser reutilizado noutros templates
+
+        ..  Estes templates vão "herdar" o código definido no template pai e
+            apenas necessitam de definir alguns blocos específicos.
+
+        ..  A linguagem de templates do Django (DTL - Django Template Language)
+            fornece um conjunto de tags built-in que possibilitam herança de
+            templates
+
+    - URL dinâmico
+
+        ..  URL que possui elementos dinâmicos, como IDs ou outros valores,
+            que são inseridos no URL durante o pedido
+
+        ..  Exemplo:
+
+            path('change-account/<int:id>', views.change_account, name = 'change-account')
+
+            <int:id> é um marcador que indica que todos URLs começados por 
+            'change-account/' seguidos de um int devem ser encaminhados para
+            a view change_account. O id será associado a um parâmetro da view 
+            designado de 'id' (e será do tipo int).

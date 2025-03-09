@@ -1,0 +1,22 @@
+------------------
+Contra
+------------------
+
+Personal Sandbox PayPal Account:
+    tpascacio@gmail.com
+    hidahsiudh1231
+    Tiago Pascacio
+
+Business/Merchant PayPal Account:
+    contra@gmail.com
+    hidahsiudh1231
+    Rodrigo Roque
+
+App Name:
+    Contra Test App
+
+Client ID:
+    AVNwDSxo5q4bqB-Cv8EgeewqLuC_J1KbjCwT6qj0X4_1NDvovQVBbhOTOlCDddaoGbotcN2EoVJLHlL0
+
+Secret Key ID:
+    EDxCa8RL3oePYMPbzpDlchKrHeV3kAGK8a3ILSTMyh1v8sSlxBv-89il_dV9EoMBDwoTuf15_etzKzAm

@@ -1,0 +1,94 @@
+{% extends 'client/_main.html' %}
+{% load i18n %}
+
+{% block content %}
+    <div class="general-container">
+        <div class="container p-5 text-center" style="padding-bottom: 85px;">
+            <h1 class="mb-4">{% translate 'Tailored for you.' %}</h1>
+            <h5><em>{% translate 'Choose the plan that best suits your needs' %}</em></h5>
+        </div>
+
+        <div class="row ps-4 pe-4 inline-block">
+            {% for plan_choice in plan_choices %}
+
+                {% if plan_choice.plan_code == 'ST' %}
+                    <div class="container bg-white shadow pt-4 pb-4 ps-5 pe-5 mt-3 paypal-form-layout" style="margin-right: 50px;">
+                        <h5 class="text-account-client bold" style="margin-bottom: 0px; margin-top: 20px; font-weight: bold; font-size: 40px;">{% translate plan_choice.name %}{% translate ' Plan' %}</h5>
+                        <h5 class="text-account-client fs-4 bold d-flex" style="margin-bottom: 10px; margin-top: 0px;">${{ plan_choice.cost }}{% translate '/month' %}</h5>
+                        <p><em>{% translate plan_choice.description1 %}</em></p>
+                        <ul style="margin-top: 15px; margin-bottom: 20px; text-align: left;">
+                            <li style="margin-bottom: 10px;"><span class="text-icon">✅</span> &nbsp; {% translate 'Access to all standard articles' %}</li>
+                            <li style="margin-bottom: 10px;"><span class="text-icon">✅</span> &nbsp; {% translate 'Regular market updates and news' %}</li>
+                            <li style="margin-bottom: 10px;"><span class="text-icon">✅</span> &nbsp; {% translate 'Basic financial analysis' %}</li>
+                            <li style="margin-bottom: 10px;"><span class="text-icon">✅</span> &nbsp; {% translate 'Monthly newsletter' %}</li>
+                            <li style="margin-bottom: 10px;"><span class="text-icon">✅</span> &nbsp; {% translate 'Limited article views per month' %}</li>
+                            <li><span class="text-icon">✅</span> &nbsp; {% translate 'Standard customer support' %}</li>
+                        </ul>
+                        <hr>
+
+
+                        <div style="margin-top: 20px;" id="paypal-button-container-{{ plan_choice.external_plan_id }}"></div>
+                        <script src="{{ plan_choice.external_api_url }}" data-sdk-integration-source="button-factory"></script>
+                        <script>
+                            paypal.Buttons({
+                                {% autoescape off %}
+                                style: JSON.parse(`{{ plan_choice.external_style_json }}`),
+                                {% endautoescape %}
+                                createSubscription: function(data, actions) {
+                                    return actions.subscription.create({
+                                    /* Creates the subscription */
+                                    plan_id: '{{ plan_choice.external_plan_id }}'
+                                    });
+                                },
+                                onApprove: function(data, actions) {
+                                    let url_path = `/client/create-subscription/${data.subscriptionID}/{{ plan_choice.plan_code }}`;
+                                    window.open(url_path, '_self');
+                                }
+                            }).render('#paypal-button-container-{{ plan_choice.external_plan_id }}'); // Renders the PayPal button
+                        </script>
+                    </div>
+
+
+                {% elif plan_choice.plan_code == 'PR' %}
+                    <div class="container bg-white shadow pt-4 pb-4 ps-5 pe-5 mt-3 paypal-form-layout premium-article" style="margin-left: 50px;">
+                        <h5 class="text-account-premium bold" style="margin-bottom: 0px; margin-top: 14px; font-weight: bold; font-size: 40px;">{% translate plan_choice.name %}{% translate ' Plan' %}</h5>
+                        <h5 class="text-account-premium fs-4 bold" style="margin-bottom: 10px; margin-top: 0px;"><em>${{ plan_choice.cost }}{% translate '/month' %}</em></h5>
+                        <p><em>{% translate plan_choice.description1 %}</em></p>
+                        <ul style="margin-top: 15px; margin-bottom: 20px; text-align: left;">
+                            <li style="margin-bottom: 10px;"><span class="text-icon">👑</span> &nbsp; {% translate 'Full access to all premium content' %}</li>
+                            <li style="margin-bottom: 10px;"><span class="text-icon">👑</span> &nbsp; {% translate 'Early access to the newest market analysis' %}</li>
+                            <li style="margin-bottom: 10px;"><span class="text-icon">👑</span> &nbsp; {% translate 'Priority access to financial insights' %}</li>
+                            <li style="margin-bottom: 10px;"><span class="text-icon">👑</span> &nbsp; {% translate 'In-depth research reports from experts' %}</li>
+                            <li style="margin-bottom: 10px;"><span class="text-icon">👑</span> &nbsp; {% translate 'Ability to download articles in PDF format' %}</li>
+                            <li><span class="text-icon">👑</span> &nbsp; {% translate 'Priority customer support' %}</li>
+                        </ul>
+                        <hr>
+        
+        
+                        <div style="margin-top: 20px;" id="paypal-button-container-{{ plan_choice.external_plan_id }}"></div>
+                        <script src="{{ plan_choice.external_api_url }}" data-sdk-integration-source="button-factory"></script>
+                        <script>
+                        paypal.Buttons({
+                            {% autoescape off %}
+                            style: JSON.parse(`{{ plan_choice.external_style_json }}`),
+                            {% endautoescape %}
+                            createSubscription: function(data, actions) {
+                                return actions.subscription.create({
+                                /* Creates the subscription */
+                                plan_id: '{{ plan_choice.external_plan_id }}'
+                                });
+                            },
+                            onApprove: function(data, actions) {
+                                let url_path = `/client/create-subscription/${data.subscriptionID}/{{ plan_choice.plan_code }}`;
+                                window.open(url_path, '_self');
+                            }
+                        }).render('#paypal-button-container-{{ plan_choice.external_plan_id }}'); // Renders the PayPal button
+                        </script>
+                    </div>
+                {% endif %}
+
+
+            {% endfor %}
+        </div>
+    </div>
+{% endblock %}

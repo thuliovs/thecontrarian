@@ -1,0 +1,9 @@
+crispy-bootstrap5
+django
+uvicorn[standard]
+ptpython
+docopt
+httpx
+python-decouple
+whitenoise
+gunicorn

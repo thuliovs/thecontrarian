@@ -1,0 +1,41 @@
+ Encontramos as seguintes entradas:
+
+        ..  src/: Directoria onde está alojado o código fonte do projecto
+            (nomes também usados para esta directoria: dev, code, contra
+            [ou seja, a própria designação do projecto])
+
+        ..  manage.py: Utilitário da linha de comando que lhe permite interagir 
+            com este projeto Django de várias formas. 
+            Consultar 
+                https://docs.djangoproject.com/en/5.1/ref/django-admin/
+            para mais informações sobre manage.py e django-admin
+
+        ..  contra/: O pacote (package) Python para este projecto. É o nome que 
+            teremos que utilizar para importar o que aí for definido
+            (eg, contra.urls)
+
+        ..  contra/__init__.py: Um ficheiro vazio que diz ao Python que esta 
+            directoria deve ser considerada um pacote Python.
+
+        ..  contra/settings.py: Definições/configurações para este projeto 
+            Django. Ver: 
+                https://docs.djangoproject.com/en/5.1/topics/settings/
+
+        ..  contra/urls.py: Declarações de URLs para este projecto. Como que o
+            index de um site assente em Django. Ver URL dispatcher:
+                https://docs.djangoproject.com/en/5.1/topics/http/urls/
+
+        ..  contra/asgi.py: Ponto de entrada para servidores Web assíncronos 
+            compatíveis com ASGI (*) para servir o projeto. Consultar:
+                https://docs.djangoproject.com/en/5.1/howto/deployment/asgi/
+
+            (*) As well as WSGI, Django also supports deploying on ASGI, the 
+                emerging Python standardp for asynchronous web servers and 
+                applications.
+
+        ..  contra/wsgi.py: Ponto de entrada para servidores Web síncronos 
+            compatíveis com WSGI (*) para servir o projeto. Consultar:
+                https://docs.djangoproject.com/en/5.1/howto/deployment/wsgi/
+
+            (*) WSGI is the Python standard for synchronous web servers and
+                applications.

@@ -1,0 +1,9 @@
+{% extends 'client/_main.html' %}
+{% load i18n %}
+
+{% block content %}
+    <div class="container bg-white shadow p-5 mt-5 form-layout text-center">
+        <h3 class="mb-1">{% translate 'Welcome back, ' %} {{ user.first_name }} {{ user.last_name }}</h3>
+        <p><em>{% translate 'A contrarian since:' %} {{ user.date_joined|date:"d F Y" }}</em></p>
+    </div>
+{% endblock %}

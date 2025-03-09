@@ -1,0 +1,15 @@
+    {% extends 'client/_main.html' %}
+{% load i18n %}
+
+{% block content %}
+<div class="container bg-white shadow p-5 mt-5 form-layout" style="max-width: 700px;">
+    <h2 class="text-center mb-2">{{ plan_choice.name }} {% translate 'SUBSCRIPTION ACTIVATED!' %}</h2>
+    
+    <div class="text-center my-4">
+        <p>{% translate "Thank's for subscribing! You can now browse articles available to this subscription plan." %}</p>
+    </div>    
+    <a href="{% url 'browse-articles' %}" class="btn-primary" style="margin-bottom: 0px; margin-top: 35px;">
+        {% translate 'BROWSE ARTICLES' %}
+    </a>
+</div>
+{% endblock %} 

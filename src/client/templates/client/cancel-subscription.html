@@ -1,0 +1,32 @@
+{% extends 'client/_main.html' %}
+{% load i18n %}
+
+{% block account_label %}
+    <span>
+        {% if subscription_plan == 'Premium' %}
+            <span class="text-account-premium">Premium Client</span>
+        {% elif subscription_plan == 'Standard' %}
+            <span class="text-account-client">Standard Client</span>
+        {% endif %}
+    </span>
+{% endblock %}
+{% block content %}
+    <div class="container bg-white shadow p-5 mt-5 form-layout">
+        <h3 class="text-center">{% translate 'Cancel Subscription' %}</h3>
+        <p class="text-center" style="margin-bottom: 30px;">{% translate 'Are you sure you want to cancel your subscription bellow?' %}</p>
+        <form method="POST" autocomplete="OFF" class="text-center">
+            {% csrf_token %}
+
+            <h5 class="{% if subscription_plan == 'Premium' %}text-account-premium{% else %}text-account-client{% endif %}" 
+                style="font-size: 3rem; text-align: center; margin-bottom: 40px;">
+                {{ subscription_plan }} {% translate 'Plan' %}
+            </h5>
+            
+            <hr width="100%" style="margin-top: 0px; margin-bottom: 20px;">
+            <div class="d-flex justify-content-between align-items-center" style="gap: 20px;">
+                <input class="btn-danger m-0" style="background-color: #a80000;color: #fff;" type="submit" value="{% translate 'Yes, I want to cancel' %}">
+                <a href="{% url 'update-client' %}" class="btn-home m-0">{% translate 'Go back' %}</a>
+            </div>
+        </form>
+    </div>
+{% endblock %}
