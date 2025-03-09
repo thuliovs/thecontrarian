@@ -3,7 +3,9 @@
   "version": "1.0.0",
   "description": "The Contrarian Report - Django App",
   "scripts": {
-    "build": "chmod +x build_files.sh && ./build_files.sh"
+    "build": "chmod +x build_files.sh && ./build_files.sh",
+    "deploy": "chmod +x vercel-deploy.sh && ./vercel-deploy.sh",
+    "migrations": "cd src && python manage.py migrate"
   },
   "engines": {
     "node": ">=14.0.0"

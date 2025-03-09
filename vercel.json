@@ -56,5 +56,6 @@
     "USE_MYSQL": "True",
     "VERCEL": "True",
     "DEBUG": "True"
-  }
+  },
+  "buildCommand": "npm run deploy"
 } 

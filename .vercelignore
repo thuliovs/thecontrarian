@@ -6,8 +6,9 @@ __pycache__
 .Python
 env/
 .env
-db.sqlite3
-*.sqlite3
+# Não excluir sqlite3 para referência na migração
+# db.sqlite3
+# *.sqlite3
 node_modules/
 .git/
 .github/

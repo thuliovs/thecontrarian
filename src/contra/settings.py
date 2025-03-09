@@ -126,7 +126,11 @@ if USE_MYSQL:
             'OPTIONS': {
                 'charset': 'utf8mb4',
                 'use_unicode': True,
-            }
+                'init_command': "SET sql_mode='STRICT_TRANS_TABLES'",
+                'connect_timeout': 60,
+            },
+            'CONN_MAX_AGE': 60,
+            'CONN_HEALTH_CHECKS': True,
         }
     }
 else:
@@ -141,6 +145,7 @@ else:
 # Debug extra para verificar o banco de dados
 print(f"Database engine: {DATABASES['default']['ENGINE']}")
 print(f"Database name: {DATABASES['default']['NAME']}")
+print(f"Database host: {DATABASES['default'].get('HOST', 'local')}")
 
 
 # Password validation
