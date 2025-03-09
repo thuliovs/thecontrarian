@@ -6,62 +6,27 @@ echo "Current directory: $(pwd)"
 echo "Directory listing:"
 ls -la
 echo "===== Environment information ====="
-echo "Python version: $(python --version 2>&1 || echo 'Python not found')"
 echo "Node version: $(node --version 2>&1 || echo 'Node not found')"
 echo "===== Creating static directories ====="
 
-# Cria pasta para arquivos estáticos
+# Cria pasta para arquivos estáticos - vamos pular a parte de collectstatic
+echo "Criando estrutura de arquivos estáticos manualmente (sem depender do collectstatic)"
 mkdir -p staticfiles_build/static
-echo "Created staticfiles_build/static"
+mkdir -p staticfiles_build/css
+mkdir -p staticfiles_build/js
+mkdir -p staticfiles_build/img
 
-# Tenta usar o Python específico do Vercel
-if command -v python3.9 &> /dev/null
-then
-    echo "Using Python 3.9"
-    python3.9 src/manage.py collectstatic --noinput || echo "Failed collecting statics with python3.9"
-elif command -v python3 &> /dev/null
-then
-    echo "Using Python 3"
-    python3 src/manage.py collectstatic --noinput || echo "Failed collecting statics with python3"
-elif command -v python &> /dev/null
-then
-    echo "Using default Python"
-    python src/manage.py collectstatic --noinput || echo "Failed collecting statics with python"
-else
-    echo "Python not found, creating placeholder files"
-    # Criar um arquivo CSS simples como placeholder
-    mkdir -p src/staticfiles/css
-    echo "/* Placeholder CSS file */" > src/staticfiles/css/placeholder.css
-    
-    # Criar um arquivo JS simples como placeholder
-    mkdir -p src/staticfiles/js
-    echo "// Placeholder JavaScript file" > src/staticfiles/js/placeholder.js
-fi
+# Criando arquivos CSS básicos
+echo "/* Base CSS file for The Contrarian Report */" > staticfiles_build/css/style.css
+echo "body{font-family:sans-serif;line-height:1.6;margin:0;padding:0;background:#f8f9fa}.navbar{background:#343a40;padding:1rem}.navbar-brand,.nav-link{color:#fff!important}.general-container{background:#fff;padding:2rem;border-radius:5px;box-shadow:0 2px 10px rgba(0,0,0,0.1);max-width:1140px;margin:2rem auto}.btn-success{background:#28a745;border-color:#28a745}.text-center{text-align:center}footer{text-align:center;padding:2rem 0;color:#6c757d}" >> staticfiles_build/css/style.css
 
-echo "===== Checking static files ====="
-# Garante que há algum conteúdo na pasta de destino
-if [ ! -d "src/staticfiles" ]; then
-    echo "Creating src/staticfiles directory"
-    mkdir -p src/staticfiles/css
-    echo "/* Placeholder CSS file */" > src/staticfiles/css/placeholder.css
-fi
+# Criando arquivo JS básico
+echo "// Base JavaScript file for The Contrarian Report" > staticfiles_build/js/main.js
 
-# Garantir que sempre haja pelo menos um arquivo na pasta de destino
+# Criando arquivo CSS específico para o Vercel
 echo "/* Vercel deployment CSS */" > staticfiles_build/static/vercel.css
-echo "Created vercel.css in staticfiles_build/static"
 
-# Tenta copiar arquivos estáticos
-echo "Trying to copy static files"
-if [ -d "src/staticfiles" ] && [ "$(ls -A src/staticfiles 2>/dev/null)" ]; then
-    echo "Copying files from src/staticfiles to staticfiles_build"
-    cp -rv src/staticfiles/* staticfiles_build/ || echo "Error copying static files"
-else
-    echo "src/staticfiles is empty or doesn't exist, creating placeholder"
-    mkdir -p staticfiles_build/css
-    echo "/* Placeholder CSS file */" > staticfiles_build/css/style.css
-fi
-
-echo "Final directory structure in staticfiles_build:"
+echo "Static files structure created successfully:"
 find staticfiles_build -type f | sort
 
 echo "===== Static files build complete! =====" 
