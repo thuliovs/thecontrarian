@@ -54,6 +54,8 @@ print(f"Configurado para usar MySQL: {use_mysql}")
 # Verificar se as migrações já foram aplicadas
 tables_created = False
 mysql_connection_ok = False
+essential_tables_exist = False
+
 if use_mysql:
     # Tentar verificar conexão com MySQL
     try:
@@ -76,7 +78,7 @@ if use_mysql:
         print("Conexão com MySQL estabelecida com sucesso!")
         
         # Tentar verificar se as tabelas existem
-        tables_to_check = ['account_customuser', 'django_migrations']
+        tables_to_check = ['account_customuser', 'django_migrations', 'django_session']
         missing_tables = []
         
         try:
@@ -89,9 +91,13 @@ if use_mysql:
                 if missing_tables:
                     print(f"Tabelas ausentes no MySQL: {', '.join(missing_tables)}")
                     print("Será necessário aplicar migrações durante o runtime.")
+                    # Verificar se as tabelas essenciais existem
+                    if 'django_session' not in missing_tables and 'account_customuser' not in missing_tables:
+                        essential_tables_exist = True
                 else:
                     print("Todas as tabelas principais existem!")
                     tables_created = True
+                    essential_tables_exist = True
         except Exception as e:
             print(f"Erro ao verificar tabelas: {e}")
         
@@ -129,9 +135,53 @@ os.environ['PYTHONUNBUFFERED'] = '1'  # Para garantir que os logs apareçam
 # Flag para controlar se as migrações já foram executadas
 _migrations_applied = False
 
+# Função para criar tabela django_session manualmente
+def create_session_table():
+    try:
+        print("Tentando criar tabela django_session manualmente...")
+        db_name = os.environ.get('MYSQL_DATABASE', 'not-set')
+        db_user = os.environ.get('MYSQL_USER', 'not-set')
+        db_host = os.environ.get('MYSQL_HOST', 'not-set')
+        db_password = os.environ.get('MYSQL_PASSWORD', '')
+        db_port = os.environ.get('MYSQL_PORT', '3306')
+        
+        conn = pymysql.connect(
+            host=db_host,
+            user=db_user,
+            password=db_password,
+            database=db_name,
+            port=int(db_port)
+        )
+        
+        with conn.cursor() as cursor:
+            # Verificar se a tabela já existe
+            cursor.execute("SHOW TABLES LIKE 'django_session'")
+            if cursor.fetchone():
+                print("Tabela django_session já existe.")
+                conn.close()
+                return True
+            
+            # Criar a tabela django_session manualmente
+            cursor.execute("""
+            CREATE TABLE `django_session` (
+                `session_key` varchar(40) NOT NULL,
+                `session_data` longtext NOT NULL,
+                `expire_date` datetime(6) NOT NULL,
+                PRIMARY KEY (`session_key`),
+                KEY `django_session_expire_date_a5c62663` (`expire_date`)
+            ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+            """)
+            conn.commit()
+            print("Tabela django_session criada com sucesso!")
+            conn.close()
+            return True
+    except Exception as e:
+        print(f"Erro ao criar tabela django_session: {e}")
+        return False
+
 # Função para aplicar migrações
 def apply_migrations():
-    global _migrations_applied, tables_created, mysql_connection_ok
+    global _migrations_applied, tables_created, mysql_connection_ok, essential_tables_exist
     
     if _migrations_applied:
         return True
@@ -559,6 +609,40 @@ try:
                     )
                     return error_app(environ, start_response)
             
+            # Verificar especificamente para a rota de login se a tabela de sessão existe
+            if path.startswith('/account/login/'):
+                # Verificar se a tabela django_session existe
+                db_name = os.environ.get('MYSQL_DATABASE', 'not-set')
+                db_user = os.environ.get('MYSQL_USER', 'not-set')
+                db_host = os.environ.get('MYSQL_HOST', 'not-set')
+                db_password = os.environ.get('MYSQL_PASSWORD', '')
+                db_port = os.environ.get('MYSQL_PORT', '3306')
+                
+                try:
+                    conn = pymysql.connect(
+                        host=db_host,
+                        user=db_user,
+                        password=db_password,
+                        database=db_name,
+                        port=int(db_port)
+                    )
+                    
+                    with conn.cursor() as cursor:
+                        cursor.execute("SHOW TABLES LIKE 'django_session'")
+                        if not cursor.fetchone():
+                            print("Tabela django_session não existe. Tentando criar...")
+                            # Tentar criar a tabela manualmente
+                            if not create_session_table():
+                                # Se falhar na criação manual, tentar aplicar migrações específicas
+                                print("Tentando aplicar migrações específicas de sessão...")
+                                import django
+                                django.setup()
+                                from django.core.management import execute_from_command_line
+                                execute_from_command_line(['manage.py', 'migrate', 'sessions'])
+                
+                except Exception as e:
+                    print(f"Erro ao verificar tabela django_session: {e}")
+            
             # Se for um arquivo estático, tenta servi-lo diretamente
             if path.startswith('/static/') or path.startswith('/css/') or path.startswith('/js/') or \
                path.endswith('.css') or path.endswith('.js'):
@@ -570,8 +654,27 @@ try:
                 return django_app(environ, start_response)
             except Exception as e:
                 print(f"Erro ao processar requisição Django: {str(e)}")
-                # Tentar aplicar migrações se o erro for relacionado a tabelas
-                if "Table" in str(e) and "doesn't exist" in str(e) and not _migrations_applied:
+                # Tratamento específico para erro de sessão
+                if "Table 'thecontrarian.django_session' doesn't exist" in str(e):
+                    print("Erro de tabela django_session. Tentando criar tabela e tentar novamente...")
+                    session_created = create_session_table()
+                    if session_created:
+                        try:
+                            return django_app(environ, start_response)
+                        except Exception as e2:
+                            error_app = serve_error_page(
+                                f"Erro após criar tabela de sessão: {str(e2)}", 
+                                "A tabela django_session foi criada, mas ocorreu outro erro. Tente novamente."
+                            )
+                            return error_app(environ, start_response)
+                    else:
+                        error_app = serve_error_page(
+                            "Não foi possível criar a tabela django_session", 
+                            f"Para resolver este problema, acesse <a href='/db/reset'>este link</a> para limpar o banco de dados e recomeçar."
+                        )
+                        return error_app(environ, start_response)
+                # Tratamento para outras tabelas ausentes
+                elif "Table" in str(e) and "doesn't exist" in str(e) and not _migrations_applied:
                     print("Erro relacionado a tabela inexistente. Tentando aplicar migrações...")
                     migrations_success = apply_migrations()
                     if migrations_success:
