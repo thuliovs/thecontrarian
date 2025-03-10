@@ -142,7 +142,9 @@ CLIENT_DASHBOARD_TABLES = {
         {"name": "date_added", "definition": "DATETIME NULL DEFAULT CURRENT_TIMESTAMP"},
         {"name": "is_active", "definition": "BOOLEAN NULL DEFAULT 1"},
         {"name": "last_payment_date", "definition": "DATETIME NULL"},
-        {"name": "next_payment_date", "definition": "DATETIME NULL"}
+        {"name": "next_payment_date", "definition": "DATETIME NULL"},
+        {"name": "plan_choice_id", "definition": "INT NULL"},
+        {"name": "plan", "definition": "VARCHAR(255) NULL"}
     ],
     "client_profile": [
         {"name": "bio", "definition": "TEXT NULL"},
@@ -155,8 +157,69 @@ CLIENT_DASHBOARD_TABLES = {
         {"name": "payment_date", "definition": "DATETIME NULL"},
         {"name": "transaction_id", "definition": "VARCHAR(255) NULL"},
         {"name": "status", "definition": "VARCHAR(50) NULL"}
+    ],
+    "client_planchoice": [
+        {"name": "name", "definition": "VARCHAR(255) NULL"},
+        {"name": "description", "definition": "TEXT NULL"},
+        {"name": "price", "definition": "DECIMAL(10,2) NULL"},
+        {"name": "is_active", "definition": "BOOLEAN NULL DEFAULT 1"},
+        {"name": "plan", "definition": "VARCHAR(255) NULL"}
     ]
 }
+
+# Função para criar uma tabela se ela não existir
+def create_table_if_not_exists(table_name, columns):
+    try:
+        print(f"Verificando se a tabela {table_name} existe...")
+        db_name = os.environ.get('MYSQL_DATABASE', 'not-set')
+        db_user = os.environ.get('MYSQL_USER', 'not-set')
+        db_host = os.environ.get('MYSQL_HOST', 'not-set')
+        db_password = os.environ.get('MYSQL_PASSWORD', '')
+        db_port = os.environ.get('MYSQL_PORT', '3306')
+        
+        conn = pymysql.connect(
+            host=db_host,
+            user=db_user,
+            password=db_password,
+            database=db_name,
+            port=int(db_port)
+        )
+        
+        with conn.cursor() as cursor:
+            # Verificar se a tabela já existe
+            cursor.execute(f"SHOW TABLES LIKE '{table_name}'")
+            if cursor.fetchone():
+                print(f"Tabela {table_name} já existe.")
+                conn.close()
+                return True
+            
+            # Criar a tabela
+            print(f"Criando tabela {table_name}...")
+            
+            # Construir as colunas da tabela
+            column_defs = []
+            for col in columns:
+                column_defs.append(f"`{col['name']}` {col['definition']}")
+            
+            # Garantir que temos uma coluna ID
+            if not any("id" in col["name"].lower() and "primary key" in col["definition"].lower() for col in columns):
+                column_defs.insert(0, "`id` INT AUTO_INCREMENT PRIMARY KEY")
+            
+            # Montar e executar a query de criação da tabela
+            create_table_sql = f"""
+            CREATE TABLE `{table_name}` (
+                {', '.join(column_defs)}
+            ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+            """
+            
+            cursor.execute(create_table_sql)
+            conn.commit()
+            print(f"Tabela {table_name} criada com sucesso!")
+            conn.close()
+            return True
+    except Exception as e:
+        print(f"Erro ao criar tabela {table_name}: {e}")
+        return False
 
 # Função para criar tabela django_session manualmente
 def create_session_table():
@@ -346,8 +409,11 @@ def fix_client_dashboard_tables():
             with conn.cursor() as cursor:
                 cursor.execute(f"SHOW TABLES LIKE '{table_name}'")
                 if not cursor.fetchone():
-                    print(f"Tabela {table_name} não existe. Será criada pelas migrações do Django.")
-                    continue
+                    print(f"Tabela {table_name} não existe. Tentando criar...")
+                    conn.close()
+                    if not create_table_if_not_exists(table_name, columns):
+                        success = False
+                        continue
                 
                 # Verificar cada coluna
                 for column in columns:
@@ -770,6 +836,109 @@ try:
                             <div class="error-box">
                                 <h2>Erro ao limpar banco de dados</h2>
                                 <p>Ocorreu um erro ao tentar limpar o banco de dados:</p>
+                                <pre>{str(e)}</pre>
+                            </div>
+                            <p><a href="/">Voltar para a página principal</a></p>
+                        </div>
+                    </body>
+                    </html>
+                    """
+                    
+                    return [error_message.encode('utf-8')]
+            
+            # Verificar se é uma solicitação para verificar e corrigir todas as tabelas
+            if path == '/db/fix' and use_mysql:
+                try:
+                    print("Iniciando verificação e correção completa do banco de dados...")
+                    
+                    # Executar todas as correções possíveis
+                    result = {}
+                    result["session_table"] = create_session_table()
+                    result["client_tables"] = fix_client_dashboard_tables()
+                    result["specific_issues"] = fix_specific_table_issues()
+                    
+                    # Invalidar flag para forçar que migrações sejam aplicadas
+                    global _migrations_applied
+                    _migrations_applied = False
+                    
+                    # Retornar resultado da operação
+                    status = '200 OK'
+                    headers = [('Content-type', 'text/html; charset=utf-8')]
+                    start_response(status, headers)
+                    
+                    response = f"""
+                    <!DOCTYPE html>
+                    <html>
+                    <head>
+                        <title>Verificação de Banco de Dados - The Contrarian</title>
+                        <meta charset="UTF-8">
+                        <meta name="viewport" content="width=device-width, initial-scale=1">
+                        <style>
+                            body {{ font-family: Arial, sans-serif; line-height: 1.6; margin: 0; padding: 20px; }}
+                            .container {{ max-width: 800px; margin: 0 auto; background-color: #f8f9fa; padding: 20px; border-radius: 5px; }}
+                            .success-box {{ background-color: #d4edda; border: 1px solid #c3e6cb; padding: 15px; border-radius: 4px; margin: 20px 0; color: #155724; }}
+                            .warning-box {{ background-color: #fff3cd; border: 1px solid #ffeeba; padding: 15px; border-radius: 4px; margin: 20px 0; color: #856404; }}
+                            h1 {{ color: #343a40; }}
+                            h2 {{ color: #495057; }}
+                            ul {{ margin-top: 10px; }}
+                            a {{ color: #007bff; text-decoration: none; }}
+                            a:hover {{ text-decoration: underline; }}
+                            pre {{ background-color: #f1f1f1; padding: 10px; overflow: auto; }}
+                        </style>
+                    </head>
+                    <body>
+                        <div class="container">
+                            <h1>The Contrarian Report</h1>
+                            <div class="success-box">
+                                <h2>Verificação de banco de dados concluída!</h2>
+                                <p>O sistema verificou e tentou corrigir todas as tabelas e colunas necessárias no banco de dados.</p>
+                                <h3>Resultados:</h3>
+                                <ul>
+                                    <li>Tabela de sessão: {'Criada/verificada com sucesso' if result['session_table'] else 'Falha na verificação'}</li>
+                                    <li>Tabelas do cliente: {'Criadas/verificadas com sucesso' if result['client_tables'] else 'Algumas tabelas/colunas não puderam ser criadas'}</li>
+                                    <li>Problemas específicos: {'Resolvidos com sucesso' if result['specific_issues'] else 'Alguns problemas específicos não puderam ser resolvidos'}</li>
+                                </ul>
+                            </div>
+                            <div class="warning-box">
+                                <h3>Próximos passos:</h3>
+                                <p>Pode ser necessário recarregar as páginas da aplicação ou reiniciar o navegador para que as alterações tenham efeito.</p>
+                                <p>Se ainda encontrar problemas, você pode tentar <a href="/db/reset">resetar completamente o banco de dados</a>.</p>
+                            </div>
+                            <p><a href="/">Voltar para a página principal</a></p>
+                            <p><a href="/client/dashboard/">Ir para o dashboard do cliente</a></p>
+                        </div>
+                    </body>
+                    </html>
+                    """
+                    
+                    return [response.encode('utf-8')]
+                except Exception as e:
+                    # Em caso de erro, mostra uma página com o erro
+                    status = '500 Internal Server Error'
+                    headers = [('Content-type', 'text/html; charset=utf-8')]
+                    start_response(status, headers)
+                    
+                    error_message = f"""
+                    <!DOCTYPE html>
+                    <html>
+                    <head>
+                        <title>Erro - The Contrarian</title>
+                        <meta charset="UTF-8">
+                        <meta name="viewport" content="width=device-width, initial-scale=1">
+                        <style>
+                            body {{ font-family: Arial, sans-serif; line-height: 1.6; margin: 0; padding: 20px; }}
+                            .container {{ max-width: 800px; margin: 0 auto; background-color: #f8f9fa; padding: 20px; border-radius: 5px; }}
+                            .error-box {{ background-color: #f8d7da; border: 1px solid #f5c6cb; padding: 15px; border-radius: 4px; margin: 20px 0; color: #721c24; }}
+                            h1 {{ color: #343a40; }}
+                            pre {{ background-color: #f1f1f1; padding: 10px; overflow: auto; font-size: 14px; }}
+                        </style>
+                    </head>
+                    <body>
+                        <div class="container">
+                            <h1>The Contrarian Report</h1>
+                            <div class="error-box">
+                                <h2>Erro ao verificar banco de dados</h2>
+                                <p>Ocorreu um erro ao tentar verificar e corrigir o banco de dados:</p>
                                 <pre>{str(e)}</pre>
                             </div>
                             <p><a href="/">Voltar para a página principal</a></p>
