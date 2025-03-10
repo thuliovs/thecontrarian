@@ -135,6 +135,29 @@ os.environ['PYTHONUNBUFFERED'] = '1'  # Para garantir que os logs apareçam
 # Flag para controlar se as migrações já foram executadas
 _migrations_applied = False
 
+# Mapas de tabelas e colunas que podem estar ausentes no dashboard do cliente
+CLIENT_DASHBOARD_TABLES = {
+    "client_subscription": [
+        {"name": "external_subscription_id", "definition": "VARCHAR(255) NULL"},
+        {"name": "date_added", "definition": "DATETIME NULL DEFAULT CURRENT_TIMESTAMP"},
+        {"name": "is_active", "definition": "BOOLEAN NULL DEFAULT 1"},
+        {"name": "last_payment_date", "definition": "DATETIME NULL"},
+        {"name": "next_payment_date", "definition": "DATETIME NULL"}
+    ],
+    "client_profile": [
+        {"name": "bio", "definition": "TEXT NULL"},
+        {"name": "avatar", "definition": "VARCHAR(255) NULL"},
+        {"name": "company_name", "definition": "VARCHAR(255) NULL"},
+        {"name": "website", "definition": "VARCHAR(255) NULL"}
+    ],
+    "client_payment": [
+        {"name": "amount", "definition": "DECIMAL(10,2) NULL"},
+        {"name": "payment_date", "definition": "DATETIME NULL"},
+        {"name": "transaction_id", "definition": "VARCHAR(255) NULL"},
+        {"name": "status", "definition": "VARCHAR(50) NULL"}
+    ]
+}
+
 # Função para criar tabela django_session manualmente
 def create_session_table():
     try:
@@ -180,9 +203,48 @@ def create_session_table():
         return False
 
 # Função para adicionar coluna ausente em qualquer tabela
-def add_missing_column(table_name, column_name, column_definition="VARCHAR(255) NULL"):
+def add_missing_column(table_name, column_name, column_definition=None):
     try:
         print(f"Tentando adicionar coluna {column_name} à tabela {table_name}...")
+        
+        # Determinar o tipo de coluna baseado no nome, se não foi fornecido
+        if column_definition is None:
+            # Coloca nomes de coluna comuns e seus tipos
+            column_types = {
+                "id": "INT AUTO_INCREMENT PRIMARY KEY",
+                "date": "DATETIME NULL",
+                "date_added": "DATETIME NULL DEFAULT CURRENT_TIMESTAMP",
+                "created_at": "DATETIME NULL DEFAULT CURRENT_TIMESTAMP",
+                "updated_at": "DATETIME NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP",
+                "timestamp": "TIMESTAMP NULL DEFAULT CURRENT_TIMESTAMP",
+                "email": "VARCHAR(255) NULL",
+                "name": "VARCHAR(255) NULL",
+                "title": "VARCHAR(255) NULL",
+                "description": "TEXT NULL",
+                "content": "LONGTEXT NULL",
+                "price": "DECIMAL(10,2) NULL",
+                "is_active": "BOOLEAN NULL DEFAULT 1",
+                "status": "VARCHAR(50) NULL",
+                "external_id": "VARCHAR(255) NULL",
+                "external_subscription_id": "VARCHAR(255) NULL"
+            }
+            
+            # Verificar se o nome da coluna está no dicionário
+            if column_name in column_types:
+                column_definition = column_types[column_name]
+            # Verificar se o nome da coluna contém palavras-chave
+            elif any(keyword in column_name.lower() for keyword in ["date", "time", "created", "updated"]):
+                column_definition = "DATETIME NULL DEFAULT CURRENT_TIMESTAMP"
+            elif any(keyword in column_name.lower() for keyword in ["id", "pk", "key", "code"]):
+                column_definition = "VARCHAR(255) NULL"
+            elif any(keyword in column_name.lower() for keyword in ["price", "cost", "amount", "value"]):
+                column_definition = "DECIMAL(10,2) NULL"
+            elif any(keyword in column_name.lower() for keyword in ["is_", "has_", "can_"]):
+                column_definition = "BOOLEAN NULL DEFAULT 0"
+            else:
+                # Padrão para outros tipos de coluna
+                column_definition = "VARCHAR(255) NULL"
+        
         db_name = os.environ.get('MYSQL_DATABASE', 'not-set')
         db_user = os.environ.get('MYSQL_USER', 'not-set')
         db_host = os.environ.get('MYSQL_HOST', 'not-set')
@@ -213,7 +275,7 @@ def add_missing_column(table_name, column_name, column_definition="VARCHAR(255) 
                 return True
             
             # Adicionar a coluna ausente
-            print(f"Adicionando coluna {column_name} à tabela {table_name}...")
+            print(f"Adicionando coluna {column_name} à tabela {table_name} como {column_definition}...")
             cursor.execute(f"""
             ALTER TABLE {table_name} 
             ADD COLUMN {column_name} {column_definition}
@@ -226,9 +288,21 @@ def add_missing_column(table_name, column_name, column_definition="VARCHAR(255) 
         print(f"Erro ao adicionar coluna {column_name} à tabela {table_name}: {e}")
         return False
 
-# Função para adicionar coluna ausente na tabela client_subscription
+# Função para adicionar colunas ausentes na tabela client_subscription
 def fix_client_subscription_table():
-    return add_missing_column("client_subscription", "external_subscription_id", "VARCHAR(255) NULL")
+    # Lista de colunas que podem estar faltando em client_subscription
+    columns_to_add = [
+        {"name": "external_subscription_id", "definition": "VARCHAR(255) NULL"},
+        {"name": "date_added", "definition": "DATETIME NULL DEFAULT CURRENT_TIMESTAMP"},
+        # Adicione outras colunas que possam estar faltando
+    ]
+    
+    success = True
+    for column in columns_to_add:
+        if not add_missing_column("client_subscription", column["name"], column["definition"]):
+            success = False
+    
+    return success
 
 # Função para corrigir problemas específicos de tabela/coluna ausente
 def fix_specific_table_issues():
@@ -241,6 +315,48 @@ def fix_specific_table_issues():
     success = True
     for fix_func in fix_functions:
         if not fix_func():
+            success = False
+    
+    return success
+
+# Função para verificar e corrigir todas as tabelas/colunas relacionadas ao dashboard do cliente
+def fix_client_dashboard_tables():
+    print("Verificando e corrigindo tabelas relacionadas ao dashboard do cliente...")
+    success = True
+    
+    # Verificar todas as tabelas e colunas definidas no mapa
+    for table_name, columns in CLIENT_DASHBOARD_TABLES.items():
+        print(f"Verificando tabela {table_name}...")
+        try:
+            # Verificar se a tabela existe
+            db_name = os.environ.get('MYSQL_DATABASE', 'not-set')
+            db_user = os.environ.get('MYSQL_USER', 'not-set')
+            db_host = os.environ.get('MYSQL_HOST', 'not-set')
+            db_password = os.environ.get('MYSQL_PASSWORD', '')
+            db_port = os.environ.get('MYSQL_PORT', '3306')
+            
+            conn = pymysql.connect(
+                host=db_host,
+                user=db_user,
+                password=db_password,
+                database=db_name,
+                port=int(db_port)
+            )
+            
+            with conn.cursor() as cursor:
+                cursor.execute(f"SHOW TABLES LIKE '{table_name}'")
+                if not cursor.fetchone():
+                    print(f"Tabela {table_name} não existe. Será criada pelas migrações do Django.")
+                    continue
+                
+                # Verificar cada coluna
+                for column in columns:
+                    if not add_missing_column(table_name, column["name"], column["definition"]):
+                        success = False
+            
+            conn.close()
+        except Exception as e:
+            print(f"Erro ao verificar tabela {table_name}: {e}")
             success = False
     
     return success
@@ -711,8 +827,9 @@ try:
             
             # Verificar especificamente para a rota do dashboard do cliente
             if path.startswith('/client/dashboard/'):
-                # Tentar corrigir problemas específicos com tabelas/colunas
-                fix_specific_table_issues()
+                # Tentar corrigir problemas específicos com tabelas/colunas do dashboard
+                print("Rota do dashboard do cliente detectada. Verificando tabelas específicas...")
+                fix_client_dashboard_tables()
             
             # Se for um arquivo estático, tenta servi-lo diretamente
             if path.startswith('/static/') or path.startswith('/css/') or path.startswith('/js/') or \
