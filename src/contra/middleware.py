@@ -11,37 +11,11 @@ from django.conf import settings
 
 # Mapeamento básico das tabelas e colunas necessárias
 REQUIRED_COLUMNS = {
-    "client_subscription": [
-        {"name": "id", "definition": "INT AUTO_INCREMENT PRIMARY KEY"},
-        {"name": "client_id", "definition": "INT NOT NULL"},
-        {"name": "plan_choice_id", "definition": "INT NULL"},
-        {"name": "plan", "definition": "VARCHAR(255) NULL"},
-        {"name": "external_subscription_id", "definition": "VARCHAR(255) NULL"},
-        {"name": "date_added", "definition": "DATETIME NULL DEFAULT CURRENT_TIMESTAMP"},
-        {"name": "is_active", "definition": "BOOLEAN NULL DEFAULT 1"},
-        {"name": "last_payment_date", "definition": "DATETIME NULL"},
-        {"name": "next_payment_date", "definition": "DATETIME NULL"}
-    ],
-    "client_planchoice": [
-        {"name": "id", "definition": "INT AUTO_INCREMENT PRIMARY KEY"},
-        {"name": "name", "definition": "VARCHAR(255) NULL"},
-        {"name": "description", "definition": "TEXT NULL"},
-        {"name": "price", "definition": "DECIMAL(10,2) NULL"},
-        {"name": "is_active", "definition": "BOOLEAN NULL DEFAULT 1"},
-        {"name": "plan", "definition": "VARCHAR(255) NULL"}
-    ],
     "django_session": [
         {"name": "session_key", "definition": "VARCHAR(40) NOT NULL PRIMARY KEY"},
         {"name": "session_data", "definition": "LONGTEXT NOT NULL"},
         {"name": "expire_date", "definition": "DATETIME(6) NOT NULL"},
     ],
-    "writer_article": [
-        {"name": "id", "definition": "INT AUTO_INCREMENT PRIMARY KEY"},
-        {"name": "writer_id", "definition": "INT NOT NULL"},
-        {"name": "article_id", "definition": "INT NOT NULL"},
-        {"name": "created_at", "definition": "TIMESTAMP NULL DEFAULT CURRENT_TIMESTAMP"},
-        {"name": "updated_at", "definition": "TIMESTAMP NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP"}
-    ]
 }
 
 # Variável para controlar se o banco de dados já foi verificado

@@ -31,38 +31,11 @@ except ImportError:
 
 # Definições de colunas conhecidas
 KNOWN_COLUMNS = {
-    "client_subscription": [
-        {"name": "id", "definition": "INT AUTO_INCREMENT PRIMARY KEY"},
-        {"name": "client_id", "definition": "INT NOT NULL"},
-        {"name": "plan_choice_id", "definition": "INT NULL"},
-        {"name": "plan", "definition": "VARCHAR(255) NULL"},
-        {"name": "external_subscription_id", "definition": "VARCHAR(255) NULL"},
-        {"name": "date_added", "definition": "DATETIME NULL DEFAULT CURRENT_TIMESTAMP"},
-        {"name": "is_active", "definition": "BOOLEAN NULL DEFAULT 1"},
-        {"name": "last_payment_date", "definition": "DATETIME NULL"},
-        {"name": "next_payment_date", "definition": "DATETIME NULL"}
-    ],
-    "client_planchoice": [
-        {"name": "id", "definition": "INT AUTO_INCREMENT PRIMARY KEY"},
-        {"name": "name", "definition": "VARCHAR(255) NULL"},
-        {"name": "description", "definition": "TEXT NULL"},
-        {"name": "price", "definition": "DECIMAL(10,2) NULL"},
-        {"name": "is_active", "definition": "BOOLEAN NULL DEFAULT 1"},
-        {"name": "plan", "definition": "VARCHAR(255) NULL"}
-    ],
     "django_session": [
         {"name": "session_key", "definition": "VARCHAR(40) NOT NULL PRIMARY KEY"},
         {"name": "session_data", "definition": "LONGTEXT NOT NULL"},
         {"name": "expire_date", "definition": "DATETIME(6) NOT NULL"},
     ],
-    "writer_article": [
-        {"name": "id", "definition": "INT AUTO_INCREMENT PRIMARY KEY"},
-        {"name": "title", "definition": "VARCHAR(255) NOT NULL"},
-        {"name": "content", "definition": "LONGTEXT NOT NULL"},
-        {"name": "is_premium", "definition": "BOOLEAN NOT NULL DEFAULT 0"},
-        {"name": "date_posted", "definition": "DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP"},
-        {"name": "user_id", "definition": "INT NOT NULL"}
-    ]
 }
 
 def get_mysql_connection():
