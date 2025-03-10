@@ -236,7 +236,34 @@ try:
             try:
                 return django_app(environ, start_response)
             except Exception as e:
-                print(f"Erro ao processar requisição Django: {str(e)}")
+                error_str = str(e)
+                print(f"Erro ao processar requisição Django: {error_str}")
+                
+                # Tratar erros de coluna ausente
+                if "Unknown column" in error_str:
+                    try:
+                        print("Tentando corrigir erro de coluna ausente...")
+                        # Importar e executar a verificação de banco de dados
+                        from contra.middleware import check_and_fix_database
+                        check_and_fix_database()
+                        
+                        # Tentar novamente após a correção
+                        try:
+                            return django_app(environ, start_response)
+                        except Exception as e2:
+                            error_app = serve_error_page(
+                                f"Erro após tentativa de correção: {str(e2)}", 
+                                "O sistema tentou corrigir o problema, mas ocorreu outro erro."
+                            )
+                            return error_app(environ, start_response)
+                    except Exception as fix_error:
+                        error_app = serve_error_page(
+                            f"Erro ao tentar corrigir banco de dados: {str(fix_error)}",
+                            "Não foi possível corrigir automaticamente o problema no banco de dados."
+                        )
+                        return error_app(environ, start_response)
+                
+                # Para outros erros, mostrar página de erro padrão
                 error_app = serve_error_page(f"Erro ao processar requisição: {str(e)}", traceback.format_exc())
                 return error_app(environ, start_response)
             

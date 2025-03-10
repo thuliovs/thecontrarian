@@ -135,41 +135,4 @@ fi
 echo "Static files structure created successfully:"
 find staticfiles_build -type f | sort
 
-echo "===== Static files build complete! ====="
-
-# Criar diretório para arquivos estáticos
-echo "Creating static files directory..."
-mkdir -p staticfiles_build/static
-mkdir -p staticfiles_build/css
-mkdir -p staticfiles_build/js
-mkdir -p staticfiles_build/img
-
-# Copiar arquivos estáticos
-echo "Copying static files..."
-cp -r src/static/* staticfiles_build/static/ 2>/dev/null || :
-cp -r src/static/css/* staticfiles_build/css/ 2>/dev/null || :
-cp -r src/static/js/* staticfiles_build/js/ 2>/dev/null || :
-cp -r src/static/img/* staticfiles_build/img/ 2>/dev/null || :
-
-# Garantir que o arquivo styles.css existe
-if [ -f "src/static/css/styles.css" ]; then
-    echo "Copying original styles.css..."
-    cp src/static/css/styles.css staticfiles_build/css/
-    cp src/static/css/styles.css staticfiles_build/static/css/
-else
-    echo "Creating basic styles.css..."
-    echo "/* Basic styles */" > staticfiles_build/css/styles.css
-    cp staticfiles_build/css/styles.css staticfiles_build/static/css/
-fi
-
-# Criar style.css para compatibilidade
-cp staticfiles_build/css/styles.css staticfiles_build/css/style.css
-cp staticfiles_build/css/styles.css staticfiles_build/static/css/style.css
-
-# Configurar o banco de dados
-echo "Setting up database..."
-cd src
-python setup_database.py
-cd ..
-
-echo "Build completed!" 
+echo "===== Static files build complete! =====" 

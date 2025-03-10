@@ -1,0 +1,132 @@
+{% extends "admin/base_site.html" %}
+{% load i18n static %}
+
+{% block extrastyle %}
+<style>
+  .db-info {
+    margin: 20px 0;
+    padding: 15px;
+    background-color: #f8f9fa;
+    border-radius: 4px;
+  }
+  .table-info {
+    margin-bottom: 30px;
+  }
+  .table-name {
+    font-weight: bold;
+    background-color: #f1f1f1;
+    padding: 8px;
+    border-radius: 4px 4px 0 0;
+  }
+  .column-list {
+    border: 1px solid #e1e1e1;
+    border-radius: 0 0 4px 4px;
+    padding: 10px;
+  }
+  .column-row {
+    padding: 5px;
+    border-bottom: 1px solid #f1f1f1;
+  }
+  .column-row:last-child {
+    border-bottom: none;
+  }
+  .success-message {
+    background-color: #d4edda;
+    color: #155724;
+    padding: 10px;
+    border-radius: 4px;
+    margin-bottom: 20px;
+  }
+  .error-message {
+    background-color: #f8d7da;
+    color: #721c24;
+    padding: 10px;
+    border-radius: 4px;
+    margin-bottom: 20px;
+  }
+  .btn-fix {
+    background-color: #007bff;
+    color: white;
+    padding: 8px 15px;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    text-decoration: none;
+    display: inline-block;
+    margin-bottom: 20px;
+  }
+  .btn-fix:hover {
+    background-color: #0069d9;
+    color: white;
+  }
+  .json-data {
+    background-color: #f8f9fa;
+    padding: 10px;
+    border-radius: 4px;
+    font-family: monospace;
+    white-space: pre-wrap;
+    margin-top: 20px;
+  }
+</style>
+{% endblock %}
+
+{% block breadcrumbs %}
+<div class="breadcrumbs">
+  <a href="{% url 'admin:index' %}">{% translate 'Home' %}</a>
+  &rsaquo; {% translate 'Database Diagnosis' %}
+</div>
+{% endblock %}
+
+{% block content %}
+<h1>{% translate 'Database Diagnosis and Repair' %}</h1>
+
+<div class="db-info">
+  <h2>{% translate 'Environment Information' %}</h2>
+  <p><strong>{% translate 'Database Engine' %}:</strong> {{ env_info.DATABASE_ENGINE }}</p>
+  <p><strong>{% translate 'Database Name' %}:</strong> {{ env_info.DATABASE_NAME }}</p>
+  <p><strong>{% translate 'Database Host' %}:</strong> {{ env_info.DATABASE_HOST }}</p>
+  <p><strong>{% translate 'Using MySQL' %}:</strong> {{ env_info.USE_MYSQL }}</p>
+  <p><strong>{% translate 'Vercel' %}:</strong> {{ env_info.VERCEL }}</p>
+</div>
+
+{% if fix_result %}
+<div class="success-message">
+  {{ fix_result }}
+</div>
+{% endif %}
+
+{% if db_diagnosis.error %}
+<div class="error-message">
+  <h3>{% translate 'Error' %}</h3>
+  <p>{{ db_diagnosis.error }}</p>
+  {% if db_diagnosis.traceback %}
+  <pre>{{ db_diagnosis.traceback }}</pre>
+  {% endif %}
+</div>
+{% else %}
+<a href="?fix=true" class="btn-fix">{% translate 'Fix Database Issues' %}</a>
+
+<h2>{% translate 'Tables' %}</h2>
+{% for table_name, columns in db_diagnosis.tables.items %}
+<div class="table-info">
+  <div class="table-name">{{ table_name }}</div>
+  <div class="column-list">
+    {% for column in columns %}
+    <div class="column-row">
+      <strong>{{ column.name }}</strong> - 
+      {{ column.type }} 
+      {% if column.null == 'YES' %}NULL{% else %}NOT NULL{% endif %}
+      {% if column.default %}DEFAULT '{{ column.default }}'{% endif %}
+      {% if column.extra %}{{ column.extra }}{% endif %}
+    </div>
+    {% endfor %}
+  </div>
+</div>
+{% endfor %}
+{% endif %}
+
+<div class="json-data">
+  <h3>{% translate 'Raw JSON Data' %}</h3>
+  <pre>{{ json_data }}</pre>
+</div>
+{% endblock %} 

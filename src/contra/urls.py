@@ -22,6 +22,9 @@ from django.http import HttpResponse
 import account.views
 from common.views import custom_logout
 
+# Importar a view de diagnóstico
+from .views import diagnose_db
+
 # View de fallback para a home page para caso as outras rotas falhem
 def home_fallback(request):
     try:
@@ -91,9 +94,8 @@ def home_fallback(request):
 urlpatterns = [
     path('admin/', admin.site.urls),
     path('account/', include('account.urls')),
-    path('', account.views.home, name='home'),
     path('client/', include('client.urls')),
     path('writer/', include('writer.urls')),
-    path('logout/', custom_logout, name='logout'),
-    path('home/', home_fallback, name='home_fallback'),
+    path('db-diagnose/', diagnose_db, name='db_diagnose'),  # URL para diagnóstico do banco
+    path('', include('contra.main_urls')),  # Incluir as URLs principais
 ]
