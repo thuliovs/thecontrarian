@@ -239,8 +239,65 @@ try:
                 error_str = str(e)
                 print(f"Erro ao processar requisição Django: {error_str}")
                 
+                # Tratar erros de tabela ausente
+                if "Table 'thecontrarian.writer_article' doesn't exist" in error_str:
+                    try:
+                        print("Tabela writer_article não existe. Tentando criar...")
+                        
+                        # Importar e executar a verificação de banco de dados
+                        from contra.middleware import check_and_fix_database, REQUIRED_COLUMNS
+                        check_and_fix_database()
+                        
+                        # Criar a tabela writer_article diretamente
+                        from django.conf import settings
+                        db_settings = settings.DATABASES['default']
+                        conn = pymysql.connect(
+                            host=db_settings.get('HOST', 'localhost'),
+                            user=db_settings.get('USER', ''),
+                            password=db_settings.get('PASSWORD', ''),
+                            database=db_settings.get('NAME', ''),
+                            port=int(db_settings.get('PORT', 3306))
+                        )
+                        
+                        # Criar a tabela explicitamente
+                        with conn.cursor() as cursor:
+                            columns = REQUIRED_COLUMNS.get("writer_article", [])
+                            if columns:
+                                column_defs = []
+                                for col in columns:
+                                    column_defs.append(f"`{col['name']}` {col['definition']}")
+                                
+                                create_table_sql = f"""
+                                CREATE TABLE IF NOT EXISTS `writer_article` (
+                                    {', '.join(column_defs)}
+                                ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+                                """
+                                
+                                cursor.execute(create_table_sql)
+                                conn.commit()
+                                print("Tabela writer_article criada com sucesso!")
+                        
+                        conn.close()
+                        
+                        # Tentar novamente
+                        try:
+                            return django_app(environ, start_response)
+                        except Exception as e2:
+                            error_app = serve_error_page(
+                                f"Erro após criação da tabela writer_article: {str(e2)}", 
+                                "A tabela foi criada, mas ocorreu outro erro."
+                            )
+                            return error_app(environ, start_response)
+                            
+                    except Exception as create_error:
+                        error_app = serve_error_page(
+                            f"Erro ao criar tabela writer_article: {str(create_error)}",
+                            "Não foi possível criar a tabela necessária."
+                        )
+                        return error_app(environ, start_response)
+                
                 # Tratar erros de coluna ausente
-                if "Unknown column" in error_str:
+                elif "Unknown column" in error_str:
                     try:
                         print("Tentando corrigir erro de coluna ausente...")
                         # Importar e executar a verificação de banco de dados

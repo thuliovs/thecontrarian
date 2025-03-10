@@ -54,6 +54,14 @@ KNOWN_COLUMNS = {
         {"name": "session_key", "definition": "VARCHAR(40) NOT NULL PRIMARY KEY"},
         {"name": "session_data", "definition": "LONGTEXT NOT NULL"},
         {"name": "expire_date", "definition": "DATETIME(6) NOT NULL"},
+    ],
+    "writer_article": [
+        {"name": "id", "definition": "INT AUTO_INCREMENT PRIMARY KEY"},
+        {"name": "title", "definition": "VARCHAR(255) NOT NULL"},
+        {"name": "content", "definition": "LONGTEXT NOT NULL"},
+        {"name": "is_premium", "definition": "BOOLEAN NOT NULL DEFAULT 0"},
+        {"name": "date_posted", "definition": "DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP"},
+        {"name": "user_id", "definition": "INT NOT NULL"}
     ]
 }
 
