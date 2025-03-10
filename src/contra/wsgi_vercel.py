@@ -179,6 +179,72 @@ def create_session_table():
         print(f"Erro ao criar tabela django_session: {e}")
         return False
 
+# Função para adicionar coluna ausente em qualquer tabela
+def add_missing_column(table_name, column_name, column_definition="VARCHAR(255) NULL"):
+    try:
+        print(f"Tentando adicionar coluna {column_name} à tabela {table_name}...")
+        db_name = os.environ.get('MYSQL_DATABASE', 'not-set')
+        db_user = os.environ.get('MYSQL_USER', 'not-set')
+        db_host = os.environ.get('MYSQL_HOST', 'not-set')
+        db_password = os.environ.get('MYSQL_PASSWORD', '')
+        db_port = os.environ.get('MYSQL_PORT', '3306')
+        
+        conn = pymysql.connect(
+            host=db_host,
+            user=db_user,
+            password=db_password,
+            database=db_name,
+            port=int(db_port)
+        )
+        
+        with conn.cursor() as cursor:
+            # Verificar se a tabela existe
+            cursor.execute(f"SHOW TABLES LIKE '{table_name}'")
+            if not cursor.fetchone():
+                print(f"Tabela {table_name} não existe. Migração completa é necessária.")
+                conn.close()
+                return False
+            
+            # Verificar se a coluna já existe
+            cursor.execute(f"SHOW COLUMNS FROM {table_name} LIKE '{column_name}'")
+            if cursor.fetchone():
+                print(f"Coluna {column_name} já existe na tabela {table_name}.")
+                conn.close()
+                return True
+            
+            # Adicionar a coluna ausente
+            print(f"Adicionando coluna {column_name} à tabela {table_name}...")
+            cursor.execute(f"""
+            ALTER TABLE {table_name} 
+            ADD COLUMN {column_name} {column_definition}
+            """)
+            conn.commit()
+            print(f"Coluna {column_name} adicionada com sucesso à tabela {table_name}!")
+            conn.close()
+            return True
+    except Exception as e:
+        print(f"Erro ao adicionar coluna {column_name} à tabela {table_name}: {e}")
+        return False
+
+# Função para adicionar coluna ausente na tabela client_subscription
+def fix_client_subscription_table():
+    return add_missing_column("client_subscription", "external_subscription_id", "VARCHAR(255) NULL")
+
+# Função para corrigir problemas específicos de tabela/coluna ausente
+def fix_specific_table_issues():
+    # Lista de funções de correção para problemas específicos
+    fix_functions = [
+        create_session_table,
+        fix_client_subscription_table
+    ]
+    
+    success = True
+    for fix_func in fix_functions:
+        if not fix_func():
+            success = False
+    
+    return success
+
 # Função para aplicar migrações
 def apply_migrations():
     global _migrations_applied, tables_created, mysql_connection_ok, essential_tables_exist
@@ -643,6 +709,11 @@ try:
                 except Exception as e:
                     print(f"Erro ao verificar tabela django_session: {e}")
             
+            # Verificar especificamente para a rota do dashboard do cliente
+            if path.startswith('/client/dashboard/'):
+                # Tentar corrigir problemas específicos com tabelas/colunas
+                fix_specific_table_issues()
+            
             # Se for um arquivo estático, tenta servi-lo diretamente
             if path.startswith('/static/') or path.startswith('/css/') or path.startswith('/js/') or \
                path.endswith('.css') or path.endswith('.js'):
@@ -653,9 +724,11 @@ try:
             try:
                 return django_app(environ, start_response)
             except Exception as e:
-                print(f"Erro ao processar requisição Django: {str(e)}")
+                error_str = str(e)
+                print(f"Erro ao processar requisição Django: {error_str}")
+                
                 # Tratamento específico para erro de sessão
-                if "Table 'thecontrarian.django_session' doesn't exist" in str(e):
+                if "Table 'thecontrarian.django_session' doesn't exist" in error_str:
                     print("Erro de tabela django_session. Tentando criar tabela e tentar novamente...")
                     session_created = create_session_table()
                     if session_created:
@@ -673,8 +746,51 @@ try:
                             f"Para resolver este problema, acesse <a href='/db/reset'>este link</a> para limpar o banco de dados e recomeçar."
                         )
                         return error_app(environ, start_response)
+                # Tratamento específico para erro de coluna ausente em client_subscription
+                elif "Unknown column 'client_subscription.external_subscription_id'" in error_str:
+                    print("Erro de coluna ausente em client_subscription. Tentando corrigir...")
+                    column_fixed = fix_client_subscription_table()
+                    if column_fixed:
+                        try:
+                            return django_app(environ, start_response)
+                        except Exception as e2:
+                            error_app = serve_error_page(
+                                f"Erro após adicionar coluna à tabela: {str(e2)}", 
+                                "A coluna external_subscription_id foi adicionada à tabela client_subscription, mas ocorreu outro erro. Tente novamente."
+                            )
+                            return error_app(environ, start_response)
+                    else:
+                        error_app = serve_error_page(
+                            "Não foi possível adicionar a coluna à tabela client_subscription", 
+                            f"Para resolver este problema, acesse <a href='/db/reset'>este link</a> para limpar o banco de dados e recomeçar."
+                        )
+                        return error_app(environ, start_response)
+                # Tratamento genérico para erros de coluna ausente em qualquer tabela
+                elif "Unknown column" in error_str and "in 'field list'" in error_str:
+                    # Extrair o nome da tabela e da coluna do erro
+                    match = re.search(r"Unknown column '([^']+)\.([^']+)' in", error_str)
+                    if match:
+                        table_name = match.group(1)
+                        column_name = match.group(2)
+                        print(f"Erro de coluna ausente: {column_name} na tabela {table_name}. Tentando corrigir...")
+                        column_fixed = add_missing_column(table_name, column_name)
+                        if column_fixed:
+                            try:
+                                return django_app(environ, start_response)
+                            except Exception as e2:
+                                error_app = serve_error_page(
+                                    f"Erro após adicionar coluna à tabela: {str(e2)}", 
+                                    f"A coluna {column_name} foi adicionada à tabela {table_name}, mas ocorreu outro erro. Tente novamente."
+                                )
+                                return error_app(environ, start_response)
+                        else:
+                            error_app = serve_error_page(
+                                f"Não foi possível adicionar a coluna {column_name} à tabela {table_name}", 
+                                f"Para resolver este problema, acesse <a href='/db/reset'>este link</a> para limpar o banco de dados e recomeçar."
+                            )
+                            return error_app(environ, start_response)
                 # Tratamento para outras tabelas ausentes
-                elif "Table" in str(e) and "doesn't exist" in str(e) and not _migrations_applied:
+                elif "Table" in error_str and "doesn't exist" in error_str and not _migrations_applied:
                     print("Erro relacionado a tabela inexistente. Tentando aplicar migrações...")
                     migrations_success = apply_migrations()
                     if migrations_success:
@@ -698,8 +814,8 @@ try:
         error_message = f"Erro ao inicializar aplicação Django: {str(e)}"
         print(error_message)
         print(traceback.format_exc())
-        app = serve_error_page(error_message, traceback.format_exc())
-        
+        app = serve_error_page(error_message, traceback.format_exc()) 
+
 except Exception as e:
     error_message = f"Erro não tratado: {str(e)}"
     print(error_message)
