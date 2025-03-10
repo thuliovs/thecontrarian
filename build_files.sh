@@ -102,6 +102,16 @@ else
     echo "body{font-family:sans-serif;line-height:1.6;margin:0;padding:0;background:#f8f9fa}.navbar{background:#343a40;padding:1rem}.navbar-brand,.nav-link{color:#fff!important}.general-container{background:#fff;padding:2rem;border-radius:5px;box-shadow:0 2px 10px rgba(0,0,0,0.1);max-width:1140px;margin:2rem auto}.btn-success{background:#28a745;border-color:#28a745}.text-center{text-align:center}footer{text-align:center;padding:2rem 0;color:#6c757d}" >> staticfiles_build/css/styles.css
 fi
 
+# Copiar o arquivo de favicon (SVG)
+if [ -f src/static/chart-increasing-emoji-clipart-original.svg ]; then
+    echo "Copiando arquivo de favicon (SVG)"
+    cp src/static/chart-increasing-emoji-clipart-original.svg staticfiles_build/
+    cp src/static/chart-increasing-emoji-clipart-original.svg staticfiles_build/static/
+    echo "Arquivo de favicon copiado com sucesso"
+else
+    echo "Arquivo de favicon não encontrado"
+fi
+
 # Também criamos o style.css (singular) para compatibilidade com possíveis referências
 cp staticfiles_build/css/styles.css staticfiles_build/css/style.css
 

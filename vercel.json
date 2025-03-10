@@ -20,6 +20,11 @@
   ],
   "routes": [
     {
+      "src": "/chart-increasing-emoji-clipart-original.svg",
+      "dest": "/staticfiles_build/chart-increasing-emoji-clipart-original.svg",
+      "headers": { "cache-control": "public, max-age=31536000, immutable" }
+    },
+    {
       "src": "/static/css/styles.css",
       "dest": "/staticfiles_build/css/styles.css",
       "headers": { "cache-control": "public, max-age=31536000, immutable" }
