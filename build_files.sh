@@ -104,10 +104,18 @@ fi
 
 # Copiar o arquivo de favicon (SVG)
 if [ -f src/static/chart-increasing-emoji-clipart-original.svg ]; then
-    echo "Copiando arquivo de favicon (SVG)"
+    echo "Copiando arquivos de favicon (SVG)"
     cp src/static/chart-increasing-emoji-clipart-original.svg staticfiles_build/
     cp src/static/chart-increasing-emoji-clipart-original.svg staticfiles_build/static/
-    echo "Arquivo de favicon copiado com sucesso"
+    
+    # Copiar também o novo arquivo SVG com bordas arredondadas se existir
+    if [ -f src/static/chart-rounded-icon.svg ]; then
+        cp src/static/chart-rounded-icon.svg staticfiles_build/
+        cp src/static/chart-rounded-icon.svg staticfiles_build/static/
+        echo "Arquivos de favicon copiados com sucesso (original e arredondado)"
+    else
+        echo "Arquivo de favicon original copiado com sucesso (arredondado não encontrado)"
+    fi
 else
     echo "Arquivo de favicon não encontrado"
 fi
