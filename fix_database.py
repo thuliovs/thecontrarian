@@ -144,36 +144,41 @@ def add_column_if_missing(conn, table_name, column_name, column_definition):
         return False
 
 def fix_all_tables():
-    """Corrige todas as tabelas conhecidas"""
-    conn = get_mysql_connection()
-    if not conn:
+    """Verifica e corrige todas as tabelas necessárias no banco de dados."""
+    try:
+        conn = get_mysql_connection()
+        if not conn:
+            print("Não foi possível conectar ao banco de dados MySQL.")
+            return False
+
+        # Definições de tabelas - adicione aqui as tabelas que o sistema precisa
+        tables = {
+            # ... existing code ...
+            
+            # Adicionar a tabela writer_article que está faltando
+            'writer_article': [
+                'id INT AUTO_INCREMENT PRIMARY KEY',
+                'writer_id INT NOT NULL',
+                'article_id INT NOT NULL',
+                'created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP',
+                'updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP',
+                'FOREIGN KEY (writer_id) REFERENCES auth_user(id) ON DELETE CASCADE',
+                'FOREIGN KEY (article_id) REFERENCES articles_article(id) ON DELETE CASCADE',
+                'UNIQUE KEY writer_article_unique (writer_id, article_id)'
+            ],
+            
+            # ... existing code ...
+        }
+
+        # Criar as tabelas que não existem
+        for table_name, columns in tables.items():
+            create_table_if_missing(conn, table_name, columns)
+
+        # ... existing code ...
+    except Exception as e:
+        print(f"ERRO ao corrigir tabelas: {e}")
+        traceback.print_exc()
         return False
-    
-    all_ok = True
-    
-    # Criar ou corrigir tabelas
-    for table_name, columns in KNOWN_COLUMNS.items():
-        print(f"\n=== Verificando tabela {table_name} ===")
-        
-        # Verificar se a tabela existe
-        with conn.cursor() as cursor:
-            cursor.execute(f"SHOW TABLES LIKE '{table_name}'")
-            table_exists = cursor.fetchone() is not None
-        
-        if not table_exists:
-            # Se a tabela não existe, crie-a
-            if not create_table_if_missing(conn, table_name, columns):
-                all_ok = False
-                continue
-        else:
-            # Se a tabela existe, verifique se todas as colunas estão presentes
-            for column in columns:
-                if not add_column_if_missing(conn, table_name, column["name"], column["definition"]):
-                    all_ok = False
-    
-    # Fechar conexão
-    conn.close()
-    return all_ok
 
 def extract_models_from_django():
     """Extrai os modelos do Django"""

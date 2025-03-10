@@ -242,13 +242,8 @@ try:
                 # Tratar erros de tabela ausente
                 if "Table 'thecontrarian.writer_article' doesn't exist" in error_str:
                     try:
-                        print("Tabela writer_article não existe. Tentando criar...")
-                        
-                        # Importar e executar a verificação de banco de dados
-                        from contra.middleware import check_and_fix_database, REQUIRED_COLUMNS
-                        check_and_fix_database()
-                        
-                        # Criar a tabela writer_article diretamente
+                        print("Criando tabela writer_article que está faltando...")
+                        # Obter configurações de banco de dados
                         from django.conf import settings
                         db_settings = settings.DATABASES['default']
                         conn = pymysql.connect(
@@ -259,40 +254,49 @@ try:
                             port=int(db_settings.get('PORT', 3306))
                         )
                         
-                        # Criar a tabela explicitamente
+                        # Criar a tabela writer_article
                         with conn.cursor() as cursor:
-                            columns = REQUIRED_COLUMNS.get("writer_article", [])
-                            if columns:
-                                column_defs = []
-                                for col in columns:
-                                    column_defs.append(f"`{col['name']}` {col['definition']}")
-                                
-                                create_table_sql = f"""
-                                CREATE TABLE IF NOT EXISTS `writer_article` (
-                                    {', '.join(column_defs)}
-                                ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+                            # Verificar se a tabela já existe (outra thread pode ter criado)
+                            cursor.execute("SHOW TABLES LIKE 'writer_article'")
+                            if not cursor.fetchone():
+                                # Definição da tabela baseada na estrutura necessária
+                                create_table_sql = """
+                                CREATE TABLE writer_article (
+                                    id INT AUTO_INCREMENT PRIMARY KEY,
+                                    writer_id INT NOT NULL,
+                                    article_id INT NOT NULL,
+                                    created_at TIMESTAMP NULL DEFAULT CURRENT_TIMESTAMP,
+                                    updated_at TIMESTAMP NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+                                    FOREIGN KEY (writer_id) REFERENCES auth_user(id) ON DELETE CASCADE,
+                                    FOREIGN KEY (article_id) REFERENCES articles_article(id) ON DELETE CASCADE,
+                                    UNIQUE KEY writer_article_unique (writer_id, article_id)
+                                ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
                                 """
-                                
                                 cursor.execute(create_table_sql)
                                 conn.commit()
                                 print("Tabela writer_article criada com sucesso!")
+                            else:
+                                print("Tabela writer_article já existe.")
                         
                         conn.close()
                         
-                        # Tentar novamente
+                        # Tentar novamente a requisição
                         try:
+                            print("Retentando requisição após criar a tabela writer_article...")
                             return django_app(environ, start_response)
                         except Exception as e2:
+                            print(f"Erro após criação da tabela writer_article: {str(e2)}")
                             error_app = serve_error_page(
                                 f"Erro após criação da tabela writer_article: {str(e2)}", 
-                                "A tabela foi criada, mas ocorreu outro erro."
+                                traceback.format_exc()
                             )
                             return error_app(environ, start_response)
-                            
                     except Exception as create_error:
+                        print(f"Erro ao criar tabela writer_article: {str(create_error)}")
+                        traceback.print_exc()
                         error_app = serve_error_page(
                             f"Erro ao criar tabela writer_article: {str(create_error)}",
-                            "Não foi possível criar a tabela necessária."
+                            traceback.format_exc()
                         )
                         return error_app(environ, start_response)
                 

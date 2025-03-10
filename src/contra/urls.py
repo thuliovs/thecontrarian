@@ -97,5 +97,6 @@ urlpatterns = [
     path('client/', include('client.urls')),
     path('writer/', include('writer.urls')),
     path('db-diagnose/', diagnose_db, name='db_diagnose'),  # URL para diagnóstico do banco
+    path('admin/diagnose-db/', diagnose_db, name='diagnose_db'),
     path('', include('contra.main_urls')),  # Incluir as URLs principais
 ]

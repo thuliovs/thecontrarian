@@ -37,11 +37,10 @@ REQUIRED_COLUMNS = {
     ],
     "writer_article": [
         {"name": "id", "definition": "INT AUTO_INCREMENT PRIMARY KEY"},
-        {"name": "title", "definition": "VARCHAR(255) NOT NULL"},
-        {"name": "content", "definition": "LONGTEXT NOT NULL"},
-        {"name": "is_premium", "definition": "BOOLEAN NOT NULL DEFAULT 0"},
-        {"name": "date_posted", "definition": "DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP"},
-        {"name": "user_id", "definition": "INT NOT NULL"}
+        {"name": "writer_id", "definition": "INT NOT NULL"},
+        {"name": "article_id", "definition": "INT NOT NULL"},
+        {"name": "created_at", "definition": "TIMESTAMP NULL DEFAULT CURRENT_TIMESTAMP"},
+        {"name": "updated_at", "definition": "TIMESTAMP NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP"}
     ]
 }
 
