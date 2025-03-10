@@ -185,10 +185,67 @@ async def delete_account(request: HttpRequest) -> HttpResponse:
             
         # Adiciona mensagem antes de deletar o usuário
         await add_message(request, messages.INFO, _('Your account has been successfully deleted'))
-            
-        # Deletar o usuário (e consequentemente suas assinaturas devido ao CASCADE)
-        await current_user.adelete()
-        return redirect('home')
+        
+        # Tenta excluir o usuário com tratamento especial para o erro da tabela writer_article
+        try:
+            # Deletar o usuário (e consequentemente suas assinaturas devido ao CASCADE)
+            await current_user.adelete()
+            return redirect('home')
+        except Exception as e:
+            # Verificar se o erro é relacionado à tabela writer_article
+            error_str = str(e)
+            if "Table 'thecontrarian.writer_article' doesn't exist" in error_str:
+                # Criar a tabela writer_article manualmente
+                import pymysql
+                from django.conf import settings
+                
+                # Configurações do banco de dados
+                db_settings = settings.DATABASES['default']
+                conn = pymysql.connect(
+                    host=db_settings.get('HOST', 'localhost'),
+                    user=db_settings.get('USER', ''),
+                    password=db_settings.get('PASSWORD', ''),
+                    database=db_settings.get('NAME', ''),
+                    port=int(db_settings.get('PORT', 3306))
+                )
+                
+                # Criar a tabela writer_article com transação
+                with conn.cursor() as cursor:
+                    try:
+                        # Verificar se a tabela já existe
+                        cursor.execute("SHOW TABLES LIKE 'writer_article'")
+                        if not cursor.fetchone():
+                            # Criar a tabela
+                            create_table_sql = """
+                            CREATE TABLE writer_article (
+                                id INT AUTO_INCREMENT PRIMARY KEY,
+                                writer_id INT NOT NULL,
+                                article_id INT NOT NULL,
+                                created_at TIMESTAMP NULL DEFAULT CURRENT_TIMESTAMP,
+                                updated_at TIMESTAMP NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+                                FOREIGN KEY (writer_id) REFERENCES auth_user(id) ON DELETE CASCADE,
+                                FOREIGN KEY (article_id) REFERENCES articles_article(id) ON DELETE CASCADE,
+                                UNIQUE KEY writer_article_unique (writer_id, article_id)
+                            ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+                            """
+                            cursor.execute(create_table_sql)
+                            conn.commit()
+                            print("Tabela writer_article criada com sucesso!")
+                            
+                            # Agora tenta excluir o usuário novamente
+                            await current_user.adelete()
+                            conn.close()
+                            return redirect('home')
+                    except Exception as table_error:
+                        print(f"Erro ao criar tabela: {table_error}")
+                        await add_message(request, messages.ERROR, _('Error deleting account. Please contact support.'))
+                        conn.close()
+                        # Continua para mostrar a página delete-account novamente
+            else:
+                # Para outros erros, mostrar mensagem genérica
+                print(f"Erro ao excluir conta: {e}")
+                await add_message(request, messages.ERROR, _('Error deleting account. Please contact support.'))
+                # Continua para mostrar a página delete-account novamente
         
     context = {'user': current_user, 'subscription_plan': subscription_plan_name if subscription else "No subscription"}
     return await arender(request, 'client/delete-account.html', context)
