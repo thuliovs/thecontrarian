@@ -12,82 +12,78 @@
         {% include 'common/_base_head_content.html' %}
     {% endblock %}
 </head>
-<body class="d-flex flex-column min-vh-100">
-    <nav class="navbar navbar-expand-lg navbar-light bg-light sticky-top shadow-sm">
-        <div class="container">
-            <a class="navbar-brand main-heading" href="{% url 'home' %}"> 
-                The Contrarian {% block account_label %} {% endblock %}
-            </a>
-            <button class="navbar-toggler"
-                    type="button"
-                    data-bs-toggle="collapse"
-                    data-bs-target="#navbarNav"
-                    aria-controls="navbarNav"
-                    aria-expanded="false"
-                    aria-label="Toggle navigation"
-            >
-                <span class="navbar-toggler-icon"></span>
-            </button>
+<body>
+    <nav class="navbar navbar-expand-lg navbar-light bg-light justify-content-center sticky-top shadow-s">
+        <a class="navbar-brand main-heading" href="{% url 'home' %}" style="margin-left: 25px;"> 
+            The Contrarian {% block account_label %} {% endblock %}
+        </a>
+        <button class="navbar-toggler"
+                type="button"
+                data-toggle="collapse"
+                data-target="#navbarNavDropdown"
+                aria-controls="navbarNavDropdown"
+                aria-expanded="false"
+                aria-label="Toggle navigation"
+        >
+            <span class="navbar-toggler-icon"></span>
+        </button>
 
-            <div class="collapse navbar-collapse" id="navbarNav">
-                <ul class="navbar-nav {% block navbar_item_margin %} ms-auto {% endblock %}">
+        <div class="collapse navbar-collapse text-center" id="navbarNavDropdown">
+            <ul class="navbar-nav {% block navbar_item_margin %} ms-auto {% endblock %}">
 
-                    {% block navbar_option_1 %}
-                    <li class="nav-item">
-                        <a class="btn btn-secondary navbar-btn" type="button"  
-                            href="{% url option_url %}">{% translate option_label %}</a>
-                        </li>
-                    {% endblock %}
-                    
-                    {% block navbar_option_2 %}
-                    <li class="nav-item">
-                        <a class="btn btn-secondary navbar-btn" type="button"  
-                            href="{% url option_url %}">{% translate option_label %}</a>
-                        </li>
-                    {% endblock %}
-                    
-                    {% block navbar_option_3 %}
-                    <li class="nav-item">
-                        <a class="btn btn-secondary navbar-btn" type="button"  
-                            href="{% url option_url %}">{% translate option_label %}</a>
-                        </li>
-                    {% endblock %}
-                    
-                    {% block navbar_option_4 %}
-                    <li class="nav-item">
-                        <a class="btn btn-secondary navbar-btn" type="button"  
-                            href="{% url option_url %}">{% translate option_label %}</a>
-                        </li>
-                    {% endblock %}
-                    
-                    {% block navbar_option_5 %}
-                    <li class="nav-item">
-                        <a class="btn btn-secondary navbar-btn" type="button"  
-                            href="{% url option_url %}">{% translate option_label %}</a>
-                        </li>
-                    {% endblock %}
-                    
-                    {% block navbar_option_6 %}
-                    <li class="nav-item">
-                        <a class="btn btn-secondary navbar-btn" type="button"  
-                            href="{% url option_url %}">{% translate option_label %}</a>
-                        </li>
-                    {% endblock %}
+                {% block navbar_option_1 %}
+                <li class="nav-item">
+                    <a class="btn btn-secondary navbar-btn" type="button"  
+                        href="{% url option_url %}">{% translate option_label %}</a>
+                    </li>
+                {% endblock %}
                 
-                </ul>
-            </div>
+                {% block navbar_option_2 %}
+                <li class="nav-item">
+                    <a class="btn btn-secondary navbar-btn" type="button"  
+                        href="{% url option_url %}">{% translate option_label %}</a>
+                    </li>
+                {% endblock %}
+                
+                {% block navbar_option_3 %}
+                <li class="nav-item">
+                    <a class="btn btn-secondary navbar-btn" type="button"  
+                        href="{% url option_url %}">{% translate option_label %}</a>
+                    </li>
+                {% endblock %}
+                
+                {% block navbar_option_4 %}
+                <li class="nav-item">
+                    <a class="btn btn-secondary navbar-btn" type="button"  
+                        href="{% url option_url %}">{% translate option_label %}</a>
+                    </li>
+                {% endblock %}
+                
+                {% block navbar_option_5 %}
+                <li class="nav-item">
+                    <a class="btn btn-secondary navbar-btn" type="button"  
+                        href="{% url option_url %}">{% translate option_label %}</a>
+                    </li>
+                {% endblock %}
+                
+                {% block navbar_option_6 %}
+                <li class="nav-item">
+                    <a class="btn btn-secondary navbar-btn" type="button"  
+                        href="{% url option_url %}">{% translate option_label %}</a>
+                    </li>
+                {% endblock %}
+            
+            </ul>
         </div>
     </nav>
 
-    <main class="flex-grow-1">
-        {% block content %}
+    {% block content %}
 
-        {% endblock %}
-    </main>
+    {% endblock %}
 
     {% include 'common/_messages.html' %}
     
-    <!-- Rodapé com informações sobre a sessão -->
+{% comment %}     <!-- Rodapé com informações sobre a sessão -->
     <footer class="footer mt-auto py-3 bg-light">
         <div class="container">
             <div class="row">
@@ -108,6 +104,6 @@
                 </div>
             </div>
         </div>
-    </footer>
+    </footer> {% endcomment %}
 </body>
 </html>

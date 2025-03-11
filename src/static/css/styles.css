@@ -1,7 +1,6 @@
 body {
     background: #e4e4e4;
     min-height: 100vh;
-    overflow-x: hidden; /* Prevenir rolagem horizontal */
 }
 
 .navbar {
@@ -30,8 +29,7 @@ body {
 
 .form-layout {
     border-radius: 40px;
-    width: 90%;
-    max-width: 800px;
+    width: 800px;
     backdrop-filter: blur(10px);
     background-color: rgba(255, 255, 255, 0.95);
     box-shadow: 0 8px 32px 0 rgba(31, 38, 135, 0.15);
@@ -39,37 +37,30 @@ body {
     top: 50%;
     left: 50%;
     transform: translate(-50%, -50%);
-    padding: 20px;
 }
 
 .form-layout-update-user {
     border-radius: 40px;
-    width: 90%;
-    max-width: 800px;
+    width: 800px;
     backdrop-filter: blur(10px);
     background-color: rgba(255, 255, 255, 0.95);
-    padding: 20px;
-    margin: 20px auto;
 }
 
 .paypal-form-layout {
     border-radius: 40px;
-    width: 90%;
-    max-width: 500px;
+    width: 31%;
+    min-width: 500px;
     backdrop-filter: blur(10px);
     background-color: rgba(255, 255, 255, 0.95);
     box-shadow: 0 8px 32px 0 rgba(31, 38, 135, 0.15);
-    padding: 20px;
-    margin: 20px auto;
 }
 
 .general-container {
-    position: relative;
-    margin: 30px auto;
-    width: 90%;
-    max-width: 1200px;
-    padding: 20px;
-    transform: none;
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    width: 85%;
 }
 
 .form-layout form, .paypal-form-layout form {
@@ -91,13 +82,11 @@ body {
 
 .form-layout-article, .paypal-form-layout-article {
     border-radius: 40px;
-    width: 90%;
-    max-width: 800px;
+    width: 800px;
     backdrop-filter: blur(10px);
     background-color: rgba(255, 255, 255, 0.95);
     box-shadow: 0 8px 32px 0 rgba(31, 38, 135, 0.15);
-    margin: 0 auto 48px auto;
-    padding: 20px;
+    margin-bottom: 48px;
 }
 
 .form-layout-article form, .paypal-form-layout-article form {
@@ -113,7 +102,7 @@ body {
 .btn-primary, .btn-home, .btn-danger, .btn-success {
     width: 100%;
     margin: 1rem auto;
-    display: flex; /* Flex para permitir centralização */
+    display: flex; /* Mudado para flex para permitir centralização */
     justify-content: center; /* Centraliza horizontalmente */
     align-items: center; /* Centraliza verticalmente */
     transition: 0.3s;
@@ -124,7 +113,6 @@ body {
     border: none;
     text-decoration: none;
     font-weight: 600;
-    box-shadow: 0 8px 32px 0 rgba(31, 38, 135, 0.15);
 }
 
 .btn-primary {
@@ -429,14 +417,15 @@ small.text-muted {
     background-color: #a80000 !important;
 }
 
-/* Estilos para o rodapé */
+/* Estilos para o rodapé */s
 .footer {
-    position: relative;
+    position: fixed;
+    bottom: 0;
     width: 100%;
     padding: 15px 0;
     background-color: #f8f9fa;
     border-top: 1px solid #e7e7e7;
-    margin-top: 30px;
+    z-index: 100;
 }
 
 .footer .text-muted {
@@ -462,190 +451,4 @@ small.text-muted {
 
 .logout-link:hover {
     color: #bd2130 !important;
-}
-
-/* Media query para tablets */
-@media (max-width: 992px) {
-    .btn-primary, .btn-home, .btn-danger, .btn-success {
-        min-width: 140px;
-        padding: 8px 16px;
-        font-size: 0.95rem;
-    }
-    
-    .footer {
-        padding: 10px 0;
-    }
-    
-    .navbar-collapse {
-        background-color: #f8f9fa;
-        padding: 10px;
-        border-radius: 0 0 15px 15px;
-        box-shadow: 0 8px 16px rgba(0,0,0,0.1);
-    }
-    
-    .navbar-nav {
-        padding: 10px 0;
-    }
-    
-    .navbar-nav .nav-item {
-        margin: 5px 0;
-    }
-}
-
-/* Media query para dispositivos móveis */
-@media (max-width: 768px) {
-    .form-layout,
-    .form-layout-update-user,
-    .form-layout-article,
-    .paypal-form-layout,
-    .paypal-form-layout-article {
-        width: 95%;
-        padding: 15px;
-        border-radius: 20px;
-    }
-    
-    .general-container {
-        width: 95%;
-        padding: 10px;
-    }
-    
-    .form-layout {
-        position: relative;
-        top: auto;
-        left: auto;
-        transform: none;
-        margin: 30px auto;
-        width: 95%;
-        max-width: none;
-        padding: 20px;
-    }
-    
-    .form-layout h1,
-    .paypal-form-layout h1,
-    .form-layout-article h3,
-    .paypal-form-layout-article h3 {
-        font-size: 1.5rem;
-    }
-    
-    .navbar-brand {
-        font-size: 1.2rem;
-        margin-left: 10px !important;
-        max-width: 60%;
-        white-space: nowrap;
-        overflow: hidden;
-        text-overflow: ellipsis;
-    }
-    
-    .navbar-btn {
-        padding: 5px;
-        margin: 5px 0;
-        font-size: 0.9rem;
-    }
-    
-    .btn-primary, .btn-home, .btn-danger, .btn-success {
-        height: 40px;
-        font-size: 0.8rem;
-    }
-    
-    .navbar-collapse {
-        background-color: #f8f9fa;
-        padding: 10px;
-        border-radius: 0 0 15px 15px;
-        box-shadow: 0 8px 16px rgba(0,0,0,0.1);
-        z-index: 1000;
-    }
-    
-    .navbar-nav {
-        padding: 10px 0;
-    }
-    
-    .navbar-nav .nav-item {
-        margin: 5px 0;
-    }
-    
-    /* Ajustes adicionais para formulários em dispositivos móveis */
-    .form-layout input,
-    .form-layout-update-user input,
-    .paypal-form-layout input,
-    .form-layout select,
-    .form-layout-update-user select,
-    .paypal-form-layout select,
-    .form-layout textarea,
-    .form-layout-update-user textarea,
-    .paypal-form-layout textarea {
-        width: 100%;
-        max-width: none;
-        font-size: 16px; /* Previne zoom automático em iOS */
-    }
-    
-    /* Ajustes para o rodapé em dispositivos móveis */
-    .footer .row {
-        flex-direction: column;
-    }
-    
-    .footer .col-md-6 {
-        text-align: center;
-        margin-bottom: 10px;
-    }
-    
-    .footer .col-md-6.text-end {
-        text-align: center !important;
-    }
-}
-
-/* Media query para dispositivos móveis pequenos */
-@media (max-width: 576px) {
-    .btn-primary, .btn-home, .btn-danger, .btn-success {
-        height: 36px;
-        font-size: 0.75rem;
-    }
-    
-    .form-layout input, 
-    .form-layout-update-user input, 
-    .paypal-form-layout input {
-        font-size: 0.9rem;
-        padding: 8px;
-    }
-    
-    .form-layout h1, 
-    .paypal-form-layout h1 {
-        font-size: 1.3rem;
-    }
-    
-    .form-layout-article h3, 
-    .paypal-form-layout-article h3 {
-        font-size: 1.2rem;
-    }
-    
-    .footer .text-muted {
-        font-size: 0.8rem;
-    }
-    
-    .premium-article {
-        padding: 15px;
-    }
-    
-    .navbar-brand {
-        font-size: 1.2rem;
-        max-width: 60%;
-        white-space: nowrap;
-        overflow: hidden;
-        text-overflow: ellipsis;
-    }
-    
-    .navbar-toggler {
-        padding: 0.25rem 0.5rem;
-        font-size: 1rem;
-    }
-    
-    .navbar-nav .nav-item {
-        width: 100%;
-        text-align: center;
-    }
-    
-    .navbar-btn {
-        width: 100%;
-        margin: 5px 0;
-        padding: 5px;
-    }
 }
