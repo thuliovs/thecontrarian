@@ -51,10 +51,34 @@ async def arender(*render_args, **render_kargs) -> HttpResponse:
         return render(*render_args, **render_kargs)
     return await sync_call_render()
 
-async def alogout(*render_args, **render_kargs):
+async def alogout(request, *args, **kwargs):
+    """
+    Versão assíncrona da função logout que garante a remoção completa dos tokens de sessão.
+    
+    Esta função:
+    1. Executa o logout padrão do Django
+    2. Limpa explicitamente o cookie de sessão
+    3. Invalida a sessão atual
+    4. Cria uma nova sessão vazia para evitar erros
+    """
     @sync_to_async
     def sync_call_logout():
-        auth.logout(*render_args, **render_kargs)
+        # Logout padrão do Django
+        auth.logout(request, *args, **kwargs)
+        
+        # Limpar explicitamente o cookie de sessão
+        if hasattr(request, 'session'):
+            request.session.flush()  # Remove todos os dados da sessão
+            
+            # Definir o cookie de sessão para expirar imediatamente
+            request.session.set_expiry(-1)
+            
+            # Forçar a remoção do cookie de sessão
+            request.session.delete()
+            
+            # Criar uma nova sessão vazia para evitar erros
+            request.session.create()
+    
     await sync_call_logout()
 
 async def add_message(request, level, message, extra_tags=''):

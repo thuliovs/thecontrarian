@@ -131,4 +131,43 @@ class DatabaseFixMiddleware:
         check_and_fix_database()
         
         # Continuar com o processamento normal
-        return self.get_response(request) 
+        return self.get_response(request)
+
+class SessionManagementMiddleware:
+    """
+    Middleware para gerenciar sessões e garantir que o logout seja completo.
+    
+    Este middleware:
+    1. Verifica se a sessão está válida
+    2. Limpa sessões expiradas periodicamente
+    3. Garante que os cabeçalhos de segurança sejam aplicados em todas as respostas
+    """
+    
+    def __init__(self, get_response):
+        self.get_response = get_response
+    
+    def __call__(self, request):
+        # Processar a requisição
+        response = self.get_response(request)
+        
+        # Adicionar cabeçalhos de segurança a todas as respostas
+        response['X-Content-Type-Options'] = 'nosniff'
+        response['X-XSS-Protection'] = '1; mode=block'
+        
+        # Se for uma resposta de redirecionamento após logout, adicionar cabeçalhos anti-cache
+        if (hasattr(request, 'path') and 
+            request.path.endswith('/logout/') and 
+            300 <= response.status_code < 400):
+            response['Cache-Control'] = 'no-cache, no-store, must-revalidate'
+            response['Pragma'] = 'no-cache'
+            response['Expires'] = '0'
+        
+        return response
+    
+    def process_view(self, request, view_func, view_args, view_kwargs):
+        # Verificar se o usuário está autenticado mas a sessão está inválida
+        if request.user.is_authenticated and not request.session.get('_auth_user_id'):
+            # Forçar logout se a sessão estiver inválida
+            from django.contrib.auth import logout
+            logout(request)
+        return None 

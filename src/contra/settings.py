@@ -80,6 +80,7 @@ MIDDLEWARE = [
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
     'contra.middleware.DatabaseFixMiddleware',  # Middleware para corrigir o banco de dados
+    'contra.middleware.SessionManagementMiddleware',  # Middleware para gerenciar sessões
 ]
 
 SECURE_CROSS_ORIGIN_OPENER_POLICY = 'same-origin-allow-popups'
@@ -211,3 +212,16 @@ PAYPAL_CLIENT_ID : str = config('PAYPAL_CLIENT_ID')
 PAYPAL_SECRET_ID : str = config('PAYPAL_SECRET_ID')
 PAYPAL_AUTH_URL : str = config('PAYPAL_AUTH_URL')
 PAYPAL_BILLING_SUBSCRIPTIONS_URL: str = config('PAYPAL_BILLING_SUBSCRIPTIONS_URL')
+
+########## SESSION SETTINGS ##########
+
+# Configurações de sessão para melhorar a segurança
+SESSION_COOKIE_SECURE = config('SESSION_COOKIE_SECURE', default=True, cast=bool)  # Cookies apenas via HTTPS
+SESSION_COOKIE_HTTPONLY = True  # Cookies não acessíveis via JavaScript
+SESSION_COOKIE_SAMESITE = 'Lax'  # Proteção contra CSRF em navegadores modernos
+SESSION_EXPIRE_AT_BROWSER_CLOSE = True  # Sessão expira ao fechar o navegador
+SESSION_COOKIE_AGE = 3600  # Sessão expira após 1 hora de inatividade (em segundos)
+
+# Configuração para armazenamento de sessão
+SESSION_ENGINE = 'django.contrib.sessions.backends.db'  # Armazenar sessões no banco de dados
+SESSION_SAVE_EVERY_REQUEST = True  # Atualizar o cookie de sessão a cada requisição

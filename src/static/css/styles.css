@@ -416,3 +416,39 @@ small.text-muted {
 .toast-error {
     background-color: #a80000 !important;
 }
+
+/* Estilos para o rodapé */
+.footer {
+    position: relative;
+    bottom: 0;
+    width: 100%;
+    padding: 15px 0;
+    background-color: #f8f9fa;
+    border-top: 1px solid #e7e7e7;
+    margin-top: 30px;
+}
+
+.footer .text-muted {
+    color: #6c757d;
+    font-size: 0.9rem;
+}
+
+.footer a {
+    color: #007bff;
+    text-decoration: none;
+    transition: color 0.3s ease;
+}
+
+.footer a:hover {
+    color: #0056b3;
+    text-decoration: underline;
+}
+
+.logout-link {
+    font-weight: 500;
+    color: #dc3545 !important;
+}
+
+.logout-link:hover {
+    color: #bd2130 !important;
+}
