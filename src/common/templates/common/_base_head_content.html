@@ -1,7 +1,13 @@
 {% load static %}
 
 <meta charset="utf-8" />
-<meta name="viewport" content="width-device-width, initial-scale=1, maximum-scale=1"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+<!-- Cor do tema para navegadores móveis -->
+<meta name="theme-color" content="#f8f9fa">
+<!-- Meta tag para melhorar a experiência mobile -->
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
 <!-- Favicons -->
 <link rel="icon" type="image/svg+xml" href="{% static 'chart-rounded-icon.svg' %}">
 <!-- Favicon alternativo para navegadores que não suportam SVG -->
@@ -14,6 +20,7 @@
 <!-- Adicione Toastr CSS -->
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/toastr.js/latest/toastr.min.css">
 
+<!-- jQuery primeiro, depois Popper.js, depois Bootstrap JS -->
 <script src="https://code.jquery.com/jquery-3.7.1.min.js" 
     integrity="sha256-/JqT3SQfawRcv/BIHPThkBvs0OEvtFFmqPF/lYI/Cxo="
     crossorigin="anonymous"
@@ -23,11 +30,22 @@
 <!-- Adicione Toastr JS após jQuery -->
 <script src="https://cdnjs.cloudflare.com/ajax/libs/toastr.js/latest/toastr.min.js" defer="true"></script>
 
-<script src="https://stackpath.bootstrapcdn.com/bootstrap/4.5.0/js/bootstrap.min.js"
-    integrity="sha384-OgVRvuATP1z7JjHLkuOU7Xw704+h835Lr+6QL9UvYjZE3Ipu6Tp75j7Bh/kR0JKI"
+<!-- Popper.js, necessário para alguns recursos do Bootstrap -->
+<script src="https://cdn.jsdelivr.net/npm/@popperjs/core@2.11.8/dist/umd/popper.min.js" 
+    integrity="sha384-I7E8VVD/ismYTF4hNIPjVp/Zjvgyol6VFvRkX/vR+Vc4jQkC+hVqc2pM8ODewa9r" 
+    crossorigin="anonymous"
+    defer="true">
+</script>
+
+<!-- Bootstrap 5 JS -->
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.min.js" 
+    integrity="sha384-BBtl+eGJRgqQAUMxJ7pMwbEyER4l1g+O15P+16Ep7Q9Q+zqX6gSbd85u4mG4QzX+" 
     crossorigin="anonymous"
     defer="true">
 </script>
 
 <!-- Script personalizado para gerenciar o logout -->
 <script src="{% static 'js/logout.js' %}" defer="true"></script>
+
+<!-- Script personalizado para responsividade -->
+<script src="{% static 'js/responsive.js' %}" defer="true"></script>
