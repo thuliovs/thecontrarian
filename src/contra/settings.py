@@ -81,7 +81,6 @@ MIDDLEWARE = [
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
     'contra.middleware.DatabaseFixMiddleware',  # Middleware para corrigir o banco de dados
     'contra.middleware.SessionManagementMiddleware',  # Middleware para gerenciar sessões
-    'contra.middleware.AdminStaticFilesMiddleware',  # Middleware para servir arquivos estáticos de admin
 ]
 
 SECURE_CROSS_ORIGIN_OPENER_POLICY = 'same-origin-allow-popups'
