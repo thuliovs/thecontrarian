@@ -171,3 +171,83 @@ class SessionManagementMiddleware:
             from django.contrib.auth import logout
             logout(request)
         return None 
+
+class AdminStaticFilesMiddleware:
+    """
+    Middleware para servir arquivos estáticos de admin diretamente.
+    
+    Este middleware verifica se a requisição é para um arquivo estático do admin
+    e tenta servi-lo diretamente, evitando que a requisição chegue ao Django.
+    """
+    
+    def __init__(self, get_response):
+        self.get_response = get_response
+        
+        # Caminhos de arquivos estáticos de admin
+        self.admin_static_paths = [
+            '/static/admin/', 
+            '/admin/css/', 
+            '/admin/js/', 
+            '/admin/img/'
+        ]
+        
+        # Mapeamento de tipos MIME
+        self.mime_types = {
+            '.css': 'text/css',
+            '.js': 'application/javascript',
+            '.png': 'image/png',
+            '.jpg': 'image/jpeg',
+            '.jpeg': 'image/jpeg',
+            '.gif': 'image/gif',
+            '.svg': 'image/svg+xml',
+            '.ico': 'image/x-icon',
+            '.woff': 'font/woff',
+            '.woff2': 'font/woff2',
+            '.ttf': 'font/ttf',
+            '.eot': 'application/vnd.ms-fontobject'
+        }
+    
+    def __call__(self, request):
+        # Verificar se a requisição é para um arquivo estático do admin
+        path = request.path
+        
+        # Verifica se o caminho corresponde a um arquivo estático do admin
+        for admin_path in self.admin_static_paths:
+            if path.startswith(admin_path):
+                # Tentar servir o arquivo estático
+                try:
+                    # Em produção (Vercel), deixar o sistema de rotas do Vercel lidar com isso
+                    if os.environ.get('VERCEL', 'False').lower() == 'true':
+                        return self.get_response(request)
+                    
+                    # Em desenvolvimento, tentar servir o arquivo localmente
+                    import os
+                    from django.http import HttpResponse, FileResponse
+                    from django.conf import settings
+                    
+                    # Determinar o caminho real do arquivo
+                    if path.startswith('/static/admin/'):
+                        relative_path = path[len('/static/admin/'):]
+                        file_path = os.path.join(settings.STATIC_ROOT, 'admin', relative_path)
+                    else:
+                        # Para outros caminhos de admin
+                        relative_path = path[path.find('/', 1) + 1:]  # Pular o primeiro '/'
+                        file_path = os.path.join(settings.STATIC_ROOT, 'admin', relative_path)
+                    
+                    # Verificar se o arquivo existe
+                    if os.path.exists(file_path) and os.path.isfile(file_path):
+                        # Determinar o tipo MIME
+                        ext = os.path.splitext(file_path)[1].lower()
+                        content_type = self.mime_types.get(ext, 'application/octet-stream')
+                        
+                        # Servir o arquivo
+                        response = FileResponse(open(file_path, 'rb'), content_type=content_type)
+                        response['Cache-Control'] = 'public, max-age=31536000, immutable'
+                        return response
+                except Exception as e:
+                    print(f"Erro ao servir arquivo estático do admin: {e}")
+                    # Continuar com o fluxo normal se houver erro
+                    pass
+        
+        # Se não for um arquivo estático do admin ou houver erro, continuar com o fluxo normal
+        return self.get_response(request) 

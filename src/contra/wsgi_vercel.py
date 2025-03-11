@@ -24,6 +24,42 @@ mimetypes.add_type("text/javascript", ".js")
 mimetypes.add_type("image/png", ".png")
 mimetypes.add_type("image/jpeg", ".jpg")
 mimetypes.add_type("image/jpeg", ".jpeg")
+mimetypes.add_type("image/svg+xml", ".svg")
+mimetypes.add_type("image/x-icon", ".ico")
+mimetypes.add_type("font/woff", ".woff")
+mimetypes.add_type("font/woff2", ".woff2")
+mimetypes.add_type("font/ttf", ".ttf")
+mimetypes.add_type("application/vnd.ms-fontobject", ".eot")
+
+# Adicionar padrões para arquivos estáticos do admin
+ADMIN_STATIC_PATTERNS = [
+    '/static/admin/',
+    '/admin/css/',
+    '/admin/js/',
+    '/admin/img/'
+]
+
+# Diretórios para procurar arquivos estáticos do admin
+ADMIN_STATIC_DIRS = [
+    os.path.join(os.getcwd(), 'staticfiles_build', 'static', 'admin'),
+    os.path.join(os.getcwd(), 'staticfiles_build', 'admin'),
+    os.path.join(BASE_DIR, 'static', 'admin'),
+    os.path.join(PROJECT_DIR, 'staticfiles_build', 'static', 'admin'),
+]
+
+# Verificar e mostrar diretórios de arquivos estáticos do admin disponíveis
+print("Verificando diretórios de arquivos estáticos do admin...")
+for directory in ADMIN_STATIC_DIRS:
+    if os.path.exists(directory):
+        print(f"Diretório de admin disponível: {directory}")
+        # Listar alguns arquivos para diagnóstico
+        try:
+            files = os.listdir(directory)
+            print(f"  Arquivos encontrados: {len(files)} ({', '.join(files[:5])}{'...' if len(files) > 5 else ''})")
+        except Exception as e:
+            print(f"  Erro ao listar arquivos: {e}")
+    else:
+        print(f"Diretório de admin não encontrado: {directory}")
 
 # Importa PyMySQL antes de tudo
 try:
@@ -55,12 +91,55 @@ print(f"Environment Variables: {json.dumps({k: v for k, v in os.environ.items() 
 print(f"Configurado para usar MySQL: {use_mysql}")
 
 # Função para servir arquivos estáticos diretamente
-def serve_static_file(path, environ, start_response):
-    # Procura o arquivo em vários diretórios possíveis
+def serve_static_file(environ, start_response, path):
+    """Serve um arquivo estático"""
+    # Primeiro, verificar se é um arquivo estático do admin
+    is_admin_file = False
+    admin_relative_path = None
+    
+    # Verificar se o caminho corresponde a um padrão de arquivo estático do admin
+    for pattern in ADMIN_STATIC_PATTERNS:
+        if path.startswith(pattern):
+            is_admin_file = True
+            if pattern == '/static/admin/':
+                admin_relative_path = path[len('/static/admin/'):]
+            else:
+                admin_relative_path = path[path.find('/', 1) + 1:]  # Pular o primeiro '/'
+            break
+    
+    # Se for um arquivo do admin, procurar nos diretórios específicos de admin
+    if is_admin_file and admin_relative_path:
+        for admin_dir in ADMIN_STATIC_DIRS:
+            admin_file_path = os.path.join(admin_dir, admin_relative_path)
+            if os.path.isfile(admin_file_path):
+                # Determinamos o tipo MIME
+                content_type = mimetypes.guess_type(admin_file_path)[0] or 'text/plain'
+                
+                # Ler o arquivo
+                try:
+                    with open(admin_file_path, 'rb') as f:
+                        file_contents = f.read()
+                    
+                    # Definir cabeçalhos para cache de longo prazo
+                    status = '200 OK'
+                    headers = [
+                        ('Content-type', content_type),
+                        ('Content-Length', str(len(file_contents))),
+                        ('Cache-Control', 'public, max-age=31536000, immutable')
+                    ]
+                    start_response(status, headers)
+                    print(f"Servindo arquivo de admin: {admin_file_path} ({len(file_contents)} bytes)")
+                    return [file_contents]
+                except Exception as e:
+                    print(f"Erro ao ler arquivo de admin {admin_file_path}: {e}")
+                    # Continuar para os caminhos padrão
+    
+    # Caminhos padrão para arquivos estáticos não-admin
     search_paths = [
         os.path.join(os.getcwd(), 'staticfiles_build', path.lstrip('/')),
         os.path.join(os.getcwd(), 'staticfiles_build', 'static', path.lstrip('/')),
-        os.path.join(os.getcwd(), 'staticfiles_build', path.replace('/static/', '/').lstrip('/')),
+        os.path.join(BASE_DIR, 'static', path.lstrip('/')),
+        os.path.join(PROJECT_DIR, 'staticfiles_build', path.lstrip('/')),
         os.path.join(os.getcwd(), path.lstrip('/'))
     ]
     
@@ -228,9 +307,10 @@ try:
                 
             # Se for um arquivo estático, tenta servi-lo diretamente
             if path.startswith('/static/') or path.startswith('/css/') or path.startswith('/js/') or \
+               path.startswith('/admin/') or path.startswith('/static/admin/') or \
                path.endswith('.css') or path.endswith('.js'):
                 print(f"Tentando servir arquivo estático: {path}")
-                return serve_static_file(path, environ, start_response)
+                return serve_static_file(environ, start_response, path)
             
             # Caso contrário, passa para o Django
             try:
@@ -238,6 +318,14 @@ try:
             except Exception as e:
                 error_str = str(e)
                 print(f"Erro ao processar requisição Django: {error_str}")
+                
+                # Tentar servir arquivo estático do admin se o erro for 404 Not Found
+                if "not found" in error_str.lower() and (
+                   path.startswith('/admin/') or 
+                   path.startswith('/static/admin/') or
+                   any(ext in path.lower() for ext in ['.css', '.js', '.png', '.jpg', '.jpeg', '.svg', '.ico'])):
+                    print(f"Tentando servir arquivo estático após erro 404: {path}")
+                    return serve_static_file(environ, start_response, path)
                 
                 # Tratar erros de tabela ausente
                 if "Table 'thecontrarian.writer_article' doesn't exist" in error_str:

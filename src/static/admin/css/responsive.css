@@ -1,0 +1,67 @@
+/*
+    Responsive CSS for Django Admin interface.
+    This is a simplified version to be used when the original admin CSS files
+    cannot be found or served properly.
+*/
+
+/* Mobile navigation */
+@media (max-width: 767px) {
+    #header {
+        display: flex;
+        flex-direction: column;
+        padding: 15px 10px;
+    }
+
+    #branding {
+        margin-bottom: 10px;
+    }
+
+    #user-tools {
+        float: none;
+        text-align: left;
+        margin-top: 5px;
+    }
+    
+    .module {
+        margin-bottom: 15px;
+    }
+
+    .aligned label {
+        float: none;
+        display: block;
+        width: 100%;
+        margin-bottom: 5px;
+    }
+
+    form .aligned p, form .aligned ul {
+        margin-left: 0;
+        padding-left: 0;
+    }
+    
+    .submit-row {
+        display: flex;
+        flex-direction: column;
+    }
+    
+    .submit-row input {
+        margin-bottom: 5px;
+    }
+}
+
+/* Tablets */
+@media (min-width: 768px) and (max-width: 991px) {
+    .module {
+        margin-bottom: 15px;
+    }
+    
+    #content {
+        padding: 15px 20px;
+    }
+}
+
+/* Fix for inputs */
+@media (max-width: 1024px) {
+    input, textarea, select, .form-row p, form .button {
+        max-width: 100%;
+    }
+} 
