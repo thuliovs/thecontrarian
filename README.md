@@ -1,186 +1,99 @@
 # The Contrarian Report
 
-A web application built with Django that connects clients and writers, managing contract work with integrated PayPal subscription payments.
+A Django platform that connects clients with professional writers and manages projects, contracts, roles, and PayPal subscription payments.
 
-### 📋 Overview
+[Live project](https://thecontrarian.thulio.tech)
 
-The Contrarian Report is a platform designed to facilitate the connection between clients who need written content and professional writers. The system handles user management, project requests, contract management, and payment processing through PayPal subscriptions.
+## Highlights
 
-### 🚀 Features
+- Separate client, writer, and administrator experiences
+- Authentication and role-based access
+- Project and contract workflows
+- PayPal subscription integration
+- Responsive Bootstrap 5 interface
+- SQLite for local development and optional MySQL migration tooling
+- Production configuration for Gunicorn, WhiteNoise, and Vercel
 
-- User authentication and role-based accounts (clients and writers)
-- Project management system
-- Contract generation and handling
-- PayPal subscription integration for payments
-- Responsive design using Bootstrap 5
+## Technology
 
-### 🔧 Tech Stack
+- Python and Django
+- HTML, CSS, and Bootstrap 5
+- SQLite / MySQL
+- PayPal REST API
+- Gunicorn and WhiteNoise
 
-- **Framework**: Django
-- **Database**: SQLite
-- **Frontend**: HTML, CSS, Bootstrap 5
-- **Payment Processing**: PayPal API
-- **Dependencies**: See `requirements.txt`
+## Local setup
 
-# 📦 Installation
+### Requirements
 
-#### Prerequisites
-
-- Python 3.8 or higher
+- Python 3.8+
 - Git
 
-#### Setup Instructions
+```bash
+git clone https://github.com/thuliovs/thecontrarian.git
+cd thecontrarian
 
-1. Clone the repository to your local machine
+python -m venv .venv
+```
 
-    ```
-    git clone https://github.com/thuliovs/Contra.git
-    cd Contra
-    ```
+Activate the virtual environment:
 
-2. Create and activate a virtual environment
+```bash
+# Windows
+.venv\Scripts\activate
 
-    For Windows:
-    
-    ```
-    python -m venv .venv
-    .venv\Scripts\activate
-    ```
-    
-    For macOS/Linux:
-    
-    ```
-    python -m venv .venv
-    source .venv/bin/activate
-    ```
+# macOS / Linux
+source .venv/bin/activate
+```
 
-3. Install the required dependencies
+Install dependencies and prepare the database:
 
-    ```
-    pip install -r requirements.txt
-    ```
+```bash
+pip install -r requirements.txt
+cd src
+python manage.py migrate
+python manage.py createsuperuser
+python manage.py runserver
+```
 
-4. Create a `.env` file in the project root with your PayPal API credentials (for payment functionality)
+Open `http://127.0.0.1:8000/`.
 
-    ```
-    PAYPAL_CLIENT_ID=your_client_id
-    PAYPAL_SECRET_ID=your_secret_id
-    PAYPAL_AUTH_URL=https://api.sandbox.paypal.com/v1/oauth2/token
-    PAYPAL_BILLING_SUBSCRIPTIONS_URL=https://api.sandbox.paypal.com/v1/billing/subscriptions
-    ```
+## PayPal sandbox
 
-# 🏃‍♂️ Running the Application
+Create a local `.env` file with sandbox credentials:
 
-1. Navigate to the `src` directory
+```env
+PAYPAL_CLIENT_ID=your_client_id
+PAYPAL_SECRET_ID=your_secret
+PAYPAL_AUTH_URL=https://api.sandbox.paypal.com/v1/oauth2/token
+PAYPAL_BILLING_SUBSCRIPTIONS_URL=https://api.sandbox.paypal.com/v1/billing/subscriptions
+```
 
-    ```
-    cd src
-    ```
+Never commit credentials or production secrets.
 
-2. Run database migrations
+## Project structure
 
-    ```
-    python manage.py migrate
-    ```
+```text
+src/
+  account/       authentication and user management
+  client/        client workflows
+  writer/        writer workflows
+  common/        shared templates and utilities
+  contrarian/    Django settings and project configuration
+  static/        CSS, JavaScript, and images
+docs/             project documentation
+```
 
-3. Create a superuser (admin account)
+## Production checklist
 
-    ```
-    python manage.py createsuperuser
-    ```
+Before deploying a fork:
 
-4. Start the development server
+- provide a strong `SECRET_KEY`;
+- disable Django debug mode;
+- configure HTTPS and allowed hosts;
+- use production database and PayPal credentials through environment variables;
+- review cookie, CSRF, and session settings.
 
-    ```
-    python manage.py runserver
-    ```
+## License
 
-5. Open your browser and go to http://127.0.0.1:8000/
-
-# 📱 Project Structure
-
-- `account/`: User authentication and management
-- `client/`: Client-specific functionality
-- `writer/`: Writer-specific functionality
-- `common/`: Shared templates and utilities
-- `contrarian/`: Main project settings
-- `static/`: Static files (CSS, JS, images)
-
-### 🔑 User Roles
-
-- **Clients**: Can create projects, manage contracts, and make payments
-- **Writers**: Can view available projects, submit proposals, and manage their contracts
-- **Admin**: Can manage all aspects of the system through the Django admin interface
-
-### 💡 Development Notes
-
-- The application uses SQLite for data storage
-- PayPal integration is set up using sandbox for testing
-- The project is configured to use Bootstrap 5 for UI components
-
-### 🛡️ Security Notes
-
-- For production deployment, ensure to:
-  - Change the `SECRET_KEY` in settings
-  - Set `DEBUG = False`
-  - Configure proper database credentials
-  - Set up proper HTTPS with a valid SSL certificate
-
-# 📄 License
-
-See the LICENSE file for details.
-
-# 🤝 Contributing
-
-1. Fork the repository
-2. Create your feature branch
-3. Commit your changes
-4. Push to the branch
-5. Create a new Pull Request 
-
-## Migração de SQLite para MySQL
-
-Para migrar o banco de dados do SQLite para o MySQL, siga estas etapas:
-
-### Pré-requisitos
-- MySQL instalado e em execução
-- Um banco de dados MySQL criado para o projeto
-- Os pacotes Python necessários instalados: `pip install -r requirements.txt`
-
-### Passos para Migração
-
-1. **Configure o arquivo .env**
-   - Copie o arquivo `.env.example` para `.env` (se ainda não existir)
-   - Defina as variáveis de configuração do MySQL:
-     ```
-     USE_MYSQL=True
-     MYSQL_DATABASE=thecontrarian
-     MYSQL_USER=seu_usuario_mysql
-     MYSQL_PASSWORD=sua_senha_mysql
-     MYSQL_HOST=localhost
-     MYSQL_PORT=3306
-     ```
-
-2. **Execute o script de migração**
-   ```bash
-   python migrate_to_mysql.py
-   ```
-   
-   Este script irá:
-   - Exportar todos os dados do SQLite para arquivos JSON
-   - Criar as tabelas necessárias no MySQL
-   - Importar os dados do SQLite para o MySQL
-
-3. **Verifique a migração**
-   - Confira se os dados foram migrados corretamente acessando o MySQL
-   - Execute a aplicação com o MySQL configurado
-
-### Solução de Problemas
-
-- **Erro de conexão com o MySQL**: Verifique as credenciais no arquivo `.env` e garanta que o servidor MySQL está em execução.
-- **Erros de migração**: Se houver problemas durante a migração, verifique os logs para identificar o erro específico.
-- **Incompatibilidades de dados**: Pode ser necessário ajustar manualmente alguns dados se houver problemas de compatibilidade entre SQLite e MySQL.
-
-### Voltar para SQLite (se necessário)
-
-Para voltar a usar SQLite, simplesmente defina `USE_MYSQL=False` no arquivo `.env` ou remova esta variável. 
+Released under the [MIT License](LICENSE).
